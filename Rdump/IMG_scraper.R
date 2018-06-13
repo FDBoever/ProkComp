@@ -448,13 +448,10 @@ meltTax = function(corMat, metaTax){
 	moltencorMat = merge((moltencorMat), metaTax[,c("genusX1", "Family", "Order")], by = 'genusX1')
 	moltencorMat = merge((moltencorMat), metaTax[,c("genusX2", "Family", "Order")], by = 'genusX2')
 
-	moltencorMat$taxorder = ifelse(moltencorMat$X1==moltencorMat$X2,"itself",ifelse(moltencorMat$species1==moltencorMat$species2 && moltencorMat$species1 !=paste(moltencorMat$genusX1 ,"sp",sep="_"),"intraspecies",ifelse(moltencorMat$genusX1==moltencorMat$genusX2,"intragenus",ifelse(moltencorMat$Family.x ==moltencorMat$Family.y,"intraFamily",ifelse(moltencorMat$Order.x == moltencorMat$Order.y,"intraOrder","intrerOrder")))))
-
-	#ggplot(moltencorMat, aes(x= reorder(taxorder,value),y= value,colour= genus_of_interest)) +geom_jitter(size=0.5)+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=6),axis.text.y = element_text(size=5))+scale_colour_manual(values=c("black","orange"))
+	moltencorMat$taxorder = ifelse(moltencorMat$X1==moltencorMat$X2,"itself",ifelse(moltencorMat$species1==moltencorMat$species2 & !(paste(moltencorMat$genusX1 ,"sp",sep="_") == moltencorMat$species1|paste(moltencorMat$genusX1 ,"sp.",sep="_") == moltencorMat$species1),"intraSpecies",ifelse(moltencorMat$genusX1==moltencorMat$genusX2,"intragenus",ifelse(moltencorMat$Family.x ==moltencorMat$Family.y,"intraFamily",ifelse(moltencorMat$Order.x == moltencorMat$Order.y,"intraOrder","intrerOrder")))))
 
 	return(moltencorMat)
 }
-
 
 redabundance = fullheatdf[rowSums(fullheatdf)>0,]
 

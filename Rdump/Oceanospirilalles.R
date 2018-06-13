@@ -734,17 +734,57 @@ AAI = get.adjacency(g, attr="Mean_AAI", sparse=FALSE)
 AAI[AAI<1] <- 100
 AAI= AAI[-grep("Marinicella_", rownames(AAI)),-grep("Marinicella_", colnames(AAI))]
 
-moltenAAI = melt(AAI)
-moltenAAI$genusX1 = gsub("\\_.*", "", moltenAAI$X1)
-moltenAAI$genusX2 =  gsub("\\_.*", "", moltenAAI$X2)
 
-moltenAAI$intra = ifelse(moltenAAI$genusX1  == moltenAAI$genusX2,"intra","inter")
+TaxTable$genusX1 = TaxTable$Genus_name
+TaxTable$genusX2 = TaxTable$Genus_name
+
+#Make a corrected tax thingy, as we suspect that Marinobacter as well as Marinobacterium are Oceanospirillales
+TaxTableCorrected = TaxTable
+levels(TaxTableCorrected $Family)=c(levels(TaxTableCorrected $Family),"Marinobacteraceae",'-')
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Order")]= "Oceanospirillales"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Family")]= "Marinobacteraceae"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Order")]= "Oceanospirillales"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Family")]= "-"
+
+
+meltTax = function(corMat, metaTax){
+	moltencorMat = melt(corMat)
+	moltencorMat$species1 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X1)
+	moltencorMat$species2 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X2)
+	moltencorMat$genusX1 = gsub("\\_.*","", moltencorMat$X1)
+	moltencorMat$genusX2 = gsub("\\_.*","", moltencorMat$X2)
+	moltencorMat$genus_of_interest = ifelse(paste(moltencorMat$genusX1,"_",sep="")==GenusOfInterest,"yes","no")
+
+	moltencorMat = merge((moltencorMat), metaTax[,c("genusX1", "Family", "Order")], by = 'genusX1')
+	moltencorMat = merge((moltencorMat), metaTax[,c("genusX2", "Family", "Order")], by = 'genusX2')
+
+	moltencorMat$taxorder = ifelse(moltencorMat$X1==moltencorMat$X2,"itself",ifelse(moltencorMat$species1==moltencorMat$species2 & !(paste(moltencorMat$genusX1 ,"sp",sep="_") == moltencorMat$species1|paste(moltencorMat$genusX1 ,"sp.",sep="_") == moltencorMat$species1),"intraSpecies",ifelse(moltencorMat$genusX1==moltencorMat$genusX2,"intragenus",ifelse(moltencorMat$Family.x ==moltencorMat$Family.y,"intraFamily",ifelse(moltencorMat$Order.x == moltencorMat$Order.y,"intraOrder","intrerOrder")))))
+
+	return(moltencorMat)
+}
+
+GenusOfInterest = "Marinobacter_"
+
+moltenAAI = meltTax(AAI,TaxTable)
+#moltenAAI$taxorder = as.factor(moltenAAI$taxorder)
+#levels(moltenAAI$taxorder) = c("intrerOrder","intraOrder","intraFamily","intragenus","intraspecies","itself") 
+g1.1 = ggplot(data= moltenAAI,aes(x= reorder(taxorder,value),y= value,colour= genus_of_interest))+geom_jitter(size=0.2)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=c("black","orange"))+geom_hline(yintercept = 95,colour='gray')+geom_hline(yintercept = 96,colour='gray')
+
+g1.11 = ggplot(moltenAAI[moltenAAI $taxorder!='itself',], aes(x = value, fill = taxorder)) + geom_density(alpha = .5)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+geom_vline(xintercept = 95,colour='gray')+geom_vline(xintercept = 96,colour='gray')+scale_fill_manual(values=c("black","orange",'red','yellow','green','blue'))+scale_y_continuous(expand = c(0, 0))
+
+moltenAAI2 = meltTax(AAI, TaxTableCorrected)
+g1.2 = ggplot(data= moltenAAI2,aes(x= reorder(taxorder,value),y= value,colour= genus_of_interest))+geom_jitter(size=0.2)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=c("black","orange"))+geom_hline(yintercept = 95,colour='gray')+geom_hline(yintercept = 96,colour='gray')
+
+g1.21 = ggplot(moltenAAI2[moltenAAI2$taxorder!='itself',], aes(x = value, fill = taxorder)) + geom_density(alpha = .5)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+geom_vline(xintercept = 95,colour='gray')+geom_vline(xintercept = 96,colour='gray')+scale_fill_manual(values=c("black","orange",'red','yellow','green','blue'))+scale_y_continuous(expand = c(0, 0))
+
+
+multiplot(g1.1,g1.2,g1.11,g1.21,cols=2)
 
 
 
-ggplot(data= moltenAAI,aes(x= intra,y= value))+geom_boxplot()+geom_jitter(size=0.2)+theme_classic()
 
 
+ 
 #heatmap
 heatmap.2(AAI,trace="none",col = colorRampPalette(c("white","black"))(40))
 
