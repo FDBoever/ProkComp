@@ -1,9 +1,7 @@
 # ProkComp
 
-a repository to dump some R, python and bash scripts
-
 ## Be warned!
-most of these scripts are provisional, may contain bugs, and have to be used with care
+most of these scripts are provisional, may contain bugs, and have to be used with care!!!
 
 ### Prerequisites
 
