@@ -863,11 +863,30 @@ gghistogram(sumsAcc, x = "value",color='darkred', fill = "darkred", add = "mean"
 #----------------------------------------------
 #----------------------------------------------
 #----------------------------------------------
-#	clustering robustness with varying accessory gene stringency
+#	Bolch-idea
 #----------------------------------------------
 #----------------------------------------------
 #----------------------------------------------
-# THE BOLCH IDEA, NEED TO FINALISE / THINK ABOUT THIS
+# "Bolch-idea", e.g. how robust the phylogeny-function link is with decreasing the dataset used.
+
+#I did not get very far but have looped the calculation of some metrics (see attached files)
+#the dataset has 57 genomes, so the accessory genes are those present in 2-56 genomes
+#in essence, I decreased the upper boundary sequentially, (so, genes present in 2-56, 2-55, 2-54, ... , to only shared by 2 genomes)
+#and basically calculated the following (for each of the subsets):
+#1) jaccard distances among genomes, and correlated that to the jaccard distance among genomes using the full accessory set
+#2) jaccard distances among genomes, and correlated that to phylogenetic distances
+#3) calculated Baker's Gamma (a metric, to estimate cluster similarities) for clusterings obtained by the reduced vs full datasets
+#4) calculated Baker's Gamma for clusterings obtained by the reduced datasets vs phylogenetic clustering
+
+#additionally, I ran MDS ordination on each of the reduced datasets (selection is shown) on the basis of 3 widely used (abundance based) distance metrics, Bray, Jaccard and Manhattan 
+
+data.frame(rowSums(PA_AnvioData))[,1]
+rowSums(PA_AnvioData)
+gghistogram(data.frame(rowSums(PA_AnvioData)), x = "rowSums.PA_AnvioData.", bins=57,color="darkred")
+gghistogram(data.frame(rowSums(AccesoryDF)), x = "rowSums.AccesoryDF.", bins=55,color="darkred")
+#gghistogram(data.frame(rowSums(RareAccesoryDF)), x = "rowSums.RareAccesoryDF.", bins=55,color="darkred")
+
+
 
 library(corrplot)
 totalPCs = dim(PA_AnvioData)[1]
@@ -878,6 +897,17 @@ AccesoryDF = PA_AnvioData[!rowSums(PA_AnvioData)==1, ]
 #remove all core genes
 AccesoryDF  = AccesoryDF[! rowSums(AccesoryDF)== length(colnames(AccesoryDF)), ]
 
+
+ANVIO_cat3 = ANVIO_cat2
+rownames(ANVIO_cat3)= ANVIO_cat3$Bin_Id
+ANVIO_cat3 = ANVIO_cat3[colnames(AccesoryDF),]
+
+
+PhyloDistMatrix[ order(row.names(AccesoryDF)), ]
+
+tree2_pruned = prune(rep_tree_d , rownames(PhyloDistMatrix[!(colnames(PhyloDistMatrix) %in% colnames(AccesoryDF)),]))
+
+
 hist(rowSums(AccesoryDF))
 
 
@@ -887,8 +917,17 @@ ngenes = c()
 lowerLimit =c()
 JacCor = c()
 bakersGam = c()
+phylobakersGam = c()
+phyloJacCor = c()
+
+PhyloDistMatrix
 
 dends=dendlist(as.dendrogram(hclust(JacD_tot)))
+braylist = list()
+jaccardlist =list()
+manhattanlist =list()
+
+jacDist_tracker = c()
 
 for(i in 1:55){
 	RareAccesoryDF  = AccesoryDF[!rowSums(AccesoryDF)<2,]
@@ -899,19 +938,124 @@ for(i in 1:55){
 	#hist(rowSums(RareAccesoryDF))
 	JacD = distJaccard(t(RareAccesoryDF))
 	JacCor = c(JacCor, cor(JacD_tot, JacD))
+	phyloJacCor = c(phyloJacCor, cor(c(as.matrix(PhyloDistMatrix[colnames(RareAccesoryDF), colnames(RareAccesoryDF)])), c(as.matrix(JacD))))
+	jacDist_tracker  = cbind(jacDist_tracker ,c(as.matrix(JacD)))
 	bakersGam = c(bakersGam,cor_bakers_gamma(hclust(JacD_tot), hclust(JacD)))
+	phylobakersGam = c(phylobakersGam,cor_bakers_gamma(tree2_pruned, hclust(JacD)))
+
 	dends=dendlist(dends, as.dendrogram(hclust(JacD)))
 
-	
+	fullcount = as.matrix((RareAccesoryDF))
+	phseqAbundance = otu_table(as.data.frame.matrix(fullcount),taxa_are_rows=TRUE)
+
+	sampledata = sample_data(ANVIO_cat3)
+	sample_names(sampledata) = sample_names(phseqAbundance)
+	phyloseq = phyloseq(phseqAbundance, sampledata)
+
+    iMDS  <- ordinate(phyloseq, "MDS", distance='bray')
+    p <- plot_ordination(phyloseq, iMDS, color="group2")
+    # Add title to each plot
+    p <- p + geom_point(size=1) + scale_colour_manual(values = c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))+ theme(legend.position="none",axis.line = element_line(colour="black"),axis.ticks = element_line(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())  + ggtitle(paste("2 - ",57-(i), sep=""))
+	braylist[[i]] = p
+
+
+    iMDS  <- ordinate(phyloseq, "MDS", distance='jaccard')
+    pj <- plot_ordination(phyloseq, iMDS,"samples", color="group2") 
+    # Add title to each plot
+    pj <- pj + geom_point(size=1) + scale_colour_manual(values = c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))+ theme(legend.position="none",axis.line = element_line(colour="black"),axis.ticks = element_line(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ ggtitle(paste("2 - ",57-(i), sep=""))
+	jaccardlist[[i]] = pj
+
+   iMDS  <- ordinate(phyloseq, "MDS", distance='manhattan')
+    pm <- plot_ordination(phyloseq, iMDS,"samples", color="group2") 
+    # Add title to each plot
+    pm <- pm + geom_point(size=1) + scale_colour_manual(values = c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))+ theme(legend.position="none",axis.line = element_line(colour="black"),axis.ticks = element_line(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+ ggtitle(paste("2 - ",57-(i), sep=""))
+	manhattanlist[[i]] = pm
+
+	#multiplot(p,pj,cols=2)
+
+
 }
-plot(lowerLimit, ngenes)
-plot(lowerLimit, JacCor)
-plot(lowerLimit, bakersGam)
+
+multiplot(plotlist=braylist,cols=10)
+multiplot(plotlist= jaccardlist,cols=10)
+multiplot(plotlist= manhattanlist,cols=10)
+
+multiplot(plotlist=braylist[c(1,6,11,16,21,26,31,36,41,46,51)],cols=11)
+multiplot(plotlist= jaccardlist[c(1,6,11,16,21,26,31,36,41,46,51)],cols=11)
+multiplot(plotlist= manhattanlist[c(1,6,11,16,21,26,31,36,41,46,51)],cols=11)
+
+multiplot(plotlist=braylist[c(1,12,22,32,42,47,50,52,53,54,55)],cols=11)
+multiplot(plotlist= jaccardlist [c(1,12,22,32,42,47,50,52,53,54,55)],cols=11)
+multiplot(plotlist= manhattanlist [c(1,12,22,32,42,47,50,52,53,54,55)],cols=11)
+
+
+ggplot(data=mt,aes(x=phylo,y= value,color=57-X2))+geom_point(size=1)+theme(axis.line = element_line(colour="black"),axis.ticks = element_line(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())
+
+ggplot(data=mt,aes(x=phylo,y= value,color=57-X2))+geom_point()+theme(axis.line = element_line(colour="black"),axis.ticks = element_line(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank())+facet_wrap(~as.factor(X2))
+
+
+
+par(mfrow=c(2,2))
+plot(lowerLimit, ngenes, xlab="Shared among n genomes", ylab="Number of Genes")
+lines(lowerLimit, ngenes, pch=2, lty=2)
+plot(lowerLimit, JacCor, xlab="Shared among n genomes", ylab="Correlation of Jaccard distances")
+lines(lowerLimit, JacCor, pch=2, lty=2)
+plot(lowerLimit, phyloJacCor, xlab="Shared among n genomes", ylab="Correlation of Jaccard distances")
+lines(lowerLimit, phyloJacCor, pch=2, lty=2)
+
+plot(lowerLimit, bakersGam, xlab="Shared among n genomes", ylab="Baker's Gamma")
+
+
+plot(lowerLimit, phylobakersGam, xlab="Shared among n genomes", ylab="Baker's Gamma")
+
+
 
 corrplot(cor.dendlist(dends,method="cophenetic"), "pie", "lower",main='cophenetic')
 corrplot(cor.dendlist(dends,method="baker"), "pie", "lower",main='baker')
 corrplot(cor.dendlist(dends,,method="common_nodes"), "pie", "lower",main='common_nodes')
 corrplot(cor.dendlist(dends,method="FM_index",k=10), "pie", "lower",main="FM_index, k=10")
+
+
+
+library(fpc)
+
+
+#dissimilarity matrices
+dist_bray <- distance(phyloseq, method = "bray")
+dist_js <- distance(phyloseq, method="jaccard")
+dist_man <- distance(phyloseq, method="manhattan")
+
+
+ps_bray <- prediction.strength(dist_bray, Gmin = 2, Gmax = 10,M=10, clustermethod = kmeansCBI)
+ps_js <- prediction.strength(dist_js, Gmin = 2, Gmax = 10,M=10, clustermethod = kmeansCBI)
+ps_rjs <- prediction.strength(dist_man,Gmin = 2, Gmax = 10,M=10, clustermethod = kmeansCBI)
+
+plot_cluster_validation = function(bray,js,rjs, legend=T,...) {
+  plot(2: 10, bray, type="b", pch=1, xlab="Number of Clusters", ...)
+  lines(2: 10, js, type="b", pch=2, lty=2)
+  lines(2: 10, rjs, type="b", pch=22, lty=3)
+  if(legend) legend("topright", legend = c("Bray-Curtis","Jaccard", "Manhattan"), pch=c(1,2,22), lty=1:3)
+}
+
+plot_cluster_validation(ps_bray$mean.pred[2: 10], ps_js$mean.pred[2: 10], ps_rjs$mean.pred[2: 10], ylab="Prediction Strength",ylim=c(0,1.1),legend=T)
+abline(.9,0, lty=5, col="grey70")
+abline(0.8,0,lty=8, col="grey70")
+text("Strong support", x=9,y=1, col="grey70")
+text("Moderate support", x=9, y=.85, col="grey70")
+text("Little or no support", x=9, y=.6, col="grey70")
+
+library(cluster)
+pam_bray = sapply(2:10, function(i) pam(dist_bray, k=i, cluster.only = T))
+pam_js = sapply(2:10, function(i) pam(dist_js, k=i, cluster.only = T))
+pam_rjs = sapply(2:10, function(i) pam(dist_man, k=i, cluster.only = T))
+
+
+ch_bray = apply(pam_bray, 2, function(i) cluster.stats(dist_bray, i)$ch)
+ch_js = apply(pam_js, 2, function(i) cluster.stats(dist_js, i)$ch)
+ch_rjs = apply(pam_rjs, 2, function(i) cluster.stats(dist_man, i)$ch)
+
+plot_cluster_validation(ch_bray, ch_js, ch_rjs, legend=T, ylab="Calinski-Harabasz score",ylim=c(0,15))
+
 
 
 #----------------------------------------------
