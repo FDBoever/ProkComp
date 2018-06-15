@@ -1,5 +1,6 @@
 library(devtools)
 devtools::install_github("fkeck/phylosignal")
+devtools::install_github("fmichonneau/phylobase")
 install.packages("phylosignal",dependencies=TRUE)
 
 install.packages(c('adephylo','phylobase','picante'),dependencies=TRUE)
