@@ -27,6 +27,12 @@ library(micropan)
 library(reshape)
 library(ade4)
 library(dendextend)
+library(igraph)
+library(gplots)
+library(RColorBrewer)
+library(FactoMineR)
+library(ggplot2)
+library(Hmisc)
 
 
 #########################
@@ -692,22 +698,48 @@ nnet <- neighborNet(Mdist.blast)
 plot(nnet, "2D")
 plot(nnet)
 
+########################
+# SEQUENCE SIMMILARIY APPROAHCES
+########################
+
+TaxTable$genusX1 = TaxTable$Genus_name
+TaxTable$genusX2 = TaxTable$Genus_name
+
+#Make a corrected tax thingy, as we suspect that Marinobacter as well as Marinobacterium are Oceanospirillales
+TaxTableCorrected = TaxTable
+levels(TaxTableCorrected $Family)=c(levels(TaxTableCorrected $Family),"Marinobacteraceae",'-')
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Order")]= "Oceanospirillales"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Family")]= "Marinobacteraceae"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Order")]= "Oceanospirillales"
+TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Family")]= "-"
+
+
+meltTax = function(corMat, metaTax){
+	moltencorMat = melt(corMat)
+	moltencorMat$species1 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X1)
+	moltencorMat$species2 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X2)
+	moltencorMat$genusX1 = gsub("\\_.*","", moltencorMat$X1)
+	moltencorMat$genusX2 = gsub("\\_.*","", moltencorMat$X2)
+	moltencorMat$genus_of_interest = ifelse(paste(moltencorMat$genusX1,"_",sep="")==GenusOfInterest,"yes","no")
+
+	moltencorMat = merge((moltencorMat), metaTax[,c("genusX1", "Family", "Order")], by = 'genusX1')
+	moltencorMat = merge((moltencorMat), metaTax[,c("genusX2", "Family", "Order")], by = 'genusX2')
+	moltencorMat$X2 <- factor(moltencorMat$X2, levels=levels(moltencorMat$X1))
+	moltencorMat$taxorder = ifelse(moltencorMat$X1==moltencorMat$X2,"itself",ifelse(moltencorMat$species1==moltencorMat$species2 & !(paste(moltencorMat$genusX1 ,"sp",sep="_") == moltencorMat$species1|paste(moltencorMat$genusX1 ,"sp.",sep="_") == moltencorMat$species1),"intraSpecies",ifelse(moltencorMat$genusX1==moltencorMat$genusX2,"intragenus",ifelse(moltencorMat$Family.x ==moltencorMat$Family.y,"intraFamily",ifelse(moltencorMat$Order.x == moltencorMat$Order.y,"intraOrder","intrerOrder")))))
+
+	return(moltencorMat)
+}
+
+
 
 
 ########################
 # COMPARE M
 ########################
 #install if needed
-install.packages("igraph",dependencies=TRUE)
-install.packages(c("igraph","gplots","RColorBrewer","FactoMineR","ggplot2","Hmisc"),dependencies=TRUE)
+#install.packages("igraph",dependencies=TRUE)
+#install.packages(c("igraph","gplots","RColorBrewer","FactoMineR","ggplot2","Hmisc"),dependencies=TRUE)
 
-#load packages
-library(igraph)
-library(gplots)
-library(RColorBrewer)
-library(FactoMineR)
-library(ggplot2)
-library(Hmisc)
 
 #load the CompareM data (Get rid of the spaces in headers in text-editor!)
 CompareM =read.table("~/DATA/MarinobacterGenomics/miscl/AAI.tsv",header=TRUE)
@@ -735,33 +767,6 @@ AAI[AAI<1] <- 100
 AAI= AAI[-grep("Marinicella_", rownames(AAI)),-grep("Marinicella_", colnames(AAI))]
 
 
-TaxTable$genusX1 = TaxTable$Genus_name
-TaxTable$genusX2 = TaxTable$Genus_name
-
-#Make a corrected tax thingy, as we suspect that Marinobacter as well as Marinobacterium are Oceanospirillales
-TaxTableCorrected = TaxTable
-levels(TaxTableCorrected $Family)=c(levels(TaxTableCorrected $Family),"Marinobacteraceae",'-')
-TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Order")]= "Oceanospirillales"
-TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacter",c("Family")]= "Marinobacteraceae"
-TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Order")]= "Oceanospirillales"
-TaxTableCorrected[TaxTableCorrected $Genus=="Marinobacterium",c("Family")]= "-"
-
-
-meltTax = function(corMat, metaTax){
-	moltencorMat = melt(corMat)
-	moltencorMat$species1 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X1)
-	moltencorMat$species2 = gsub("^([^_]*_[^_]*)_.*$", "\\1", moltencorMat$X2)
-	moltencorMat$genusX1 = gsub("\\_.*","", moltencorMat$X1)
-	moltencorMat$genusX2 = gsub("\\_.*","", moltencorMat$X2)
-	moltencorMat$genus_of_interest = ifelse(paste(moltencorMat$genusX1,"_",sep="")==GenusOfInterest,"yes","no")
-
-	moltencorMat = merge((moltencorMat), metaTax[,c("genusX1", "Family", "Order")], by = 'genusX1')
-	moltencorMat = merge((moltencorMat), metaTax[,c("genusX2", "Family", "Order")], by = 'genusX2')
-
-	moltencorMat$taxorder = ifelse(moltencorMat$X1==moltencorMat$X2,"itself",ifelse(moltencorMat$species1==moltencorMat$species2 & !(paste(moltencorMat$genusX1 ,"sp",sep="_") == moltencorMat$species1|paste(moltencorMat$genusX1 ,"sp.",sep="_") == moltencorMat$species1),"intraSpecies",ifelse(moltencorMat$genusX1==moltencorMat$genusX2,"intragenus",ifelse(moltencorMat$Family.x ==moltencorMat$Family.y,"intraFamily",ifelse(moltencorMat$Order.x == moltencorMat$Order.y,"intraOrder","intrerOrder")))))
-
-	return(moltencorMat)
-}
 
 GenusOfInterest = "Marinobacter_"
 
@@ -779,11 +784,6 @@ g1.21 = ggplot(moltenAAI2[moltenAAI2$taxorder!='itself',], aes(x = value, fill =
 
 
 multiplot(g1.1,g1.2,g1.11,g1.21,cols=2)
-
-
-
-
-
  
 #heatmap
 heatmap.2(AAI,trace="none",col = colorRampPalette(c("white","black"))(40))
@@ -833,6 +833,36 @@ par(mfrow=c(2,2))
 plot(codon_usage.pca , habillage = ncol(OF), col.hab = c("green", "blue", "red",'orange','purple'), title = "Dataset projected onto PC1-2 Subspace",cex=2)
 plot(codon_usage.pca, habillage = ncol(codon_usage), col.hab = c("green", "blue", "red",'orange','purple'), title = "Dataset projected onto PC2-3 Subspace",axes=2:3,cex=1)
 plot(codon_usage.pca, habillage = ncol(Og), col.hab = c("green", "blue", "red",'orange','purple'), title = "Dataset projected onto PC3-4 Subspace",axes=3:4,cex=1)
+
+
+########################
+# ANIb - pyani
+########################
+ANIb =read.table("~/DATA/MarinobacterGenomics/miscl/Genomes/pyani-out/ANIb_percentage_identity.tab",header=TRUE)
+colnames(ANIb)=rownames(ANIb)
+ANIb=ANIb[rownames(AAI),rownames(AAI)]
+
+heatmap.2(as.matrix(ANIb),trace="none",col = colorRampPalette(c("white","black"))(40))
+#ANIb = as.matrix(ANIb)
+
+moltenANI = meltTax(as.matrix(ANIb), TaxTableCorrected)
+moltenANI$taxorder = as.factor(moltenAAI$taxorder)
+levels(moltenANI$taxorder) = c("intrerOrder","intraOrder","intraFamily","intragenus","intraspecies","itself") 
+g1.1 = ggplot(data= moltenANI,aes(x= reorder(taxorder,value),y= value*100,colour= genus_of_interest))+geom_jitter(size=0.2)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=c("black","orange"))+geom_hline(yintercept = 95,colour='gray')+geom_hline(yintercept = 96,colour='gray')
+
+
+moltenANI$AAI = moltenAAI2$value
+ggplot(data= moltenANI,aes(x= value*100,y= AAI))+ geom_point(size=0.2)+xlab('ANIb')+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))
+
+ggplot(data= moltenANI,aes(x= value*100,y= AAI))+ geom_point(size=0.2,aes(color=taxorder))+xlab('ANIb')+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=colorRampPalette(c('#376268','#96a066'))(6))
+
+
+ggplot(data= moltenANI,aes(x= value*100,y= AAI))+geom_point(size=0.2)+xlab('ANIb')+geom_smooth(method='lm',color='red')+geom_smooth()+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))+facet_wrap(~taxorder,scales='free')
+
+
+
+
+
 
 ######### - statistics - ##########
 
