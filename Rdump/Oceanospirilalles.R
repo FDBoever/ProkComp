@@ -850,18 +850,19 @@ moltenANI$taxorder = as.factor(moltenAAI$taxorder)
 levels(moltenANI$taxorder) = c("intrerOrder","intraOrder","intraFamily","intragenus","intraspecies","itself") 
 g1.1 = ggplot(data= moltenANI,aes(x= reorder(taxorder,value),y= value*100,colour= genus_of_interest))+geom_jitter(size=0.2)+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1, size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=c("black","orange"))+geom_hline(yintercept = 95,colour='gray')+geom_hline(yintercept = 96,colour='gray')
 
-
 moltenANI$AAI = moltenAAI2$value
 ggplot(data= moltenANI,aes(x= value*100,y= AAI))+ geom_point(size=0.2)+xlab('ANIb')+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))
 
-ggplot(data= moltenANI,aes(x= value*100,y= AAI))+ geom_point(size=0.2,aes(color=taxorder))+xlab('ANIb')+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=colorRampPalette(c('#376268','#96a066'))(6))
-
+ggplot(data= moltenANI,aes(x= value*100,y= AAI))+ geom_point(size=0.2,aes(color=taxorder))+xlab('ANIb')+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))+scale_colour_manual(values=colorRampPalette(c('#376268','#96a066','#bf8a20'))(6))
 
 ggplot(data= moltenANI,aes(x= value*100,y= AAI))+geom_point(size=0.2)+xlab('ANIb')+geom_smooth(method='lm',color='red')+geom_smooth()+theme_classic()+theme(axis.text.x = element_text(size=10),axis.text.y = element_text(size=10))+facet_wrap(~taxorder,scales='free')
 
+# Mantel test 
+#H0 - matrices are different, Ha - matrices correlate
 
+mantel.rtest(as.dist(ANIb), as.dist(AAI), nrepet = 999)
 
-
+#####################################################################################################################
 
 
 ######### - statistics - ##########
