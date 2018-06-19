@@ -18,4 +18,3 @@ for(alignment in file_list){
 	trimmed_seq = sequences[grepl(paste(RetainNodes,collapse='|'), names(sequences))]
 	write.fasta(trimmed_seq, names(trimmed_seq), file.out=paste(alignment,'trimmed.fa',sep=''))
 }
-
