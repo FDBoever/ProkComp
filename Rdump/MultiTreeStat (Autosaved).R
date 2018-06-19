@@ -30,6 +30,7 @@ library(dendextend)
 library(corrplot)
 library(phytools)
 library(reshape)
+library(corrplot)
 
 #########################################
 #	optional RAxML specific import
@@ -54,8 +55,9 @@ phyloMETA2$constant =as.numeric(as.character(phyloMETA2$constant))
 phyloMETA = melt(phyloMETA2,id="set")
 
 
-ggplot(phyloMETA,aes(reorder(set,value),value,fill= variable))+geom_bar(stat='identity',position=position_dodge())+scale_fill_manual(values=c('black','darkgray','lightgray'))+theme_classic()+facet_wrap(~variable)+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_y_continuous(expand = c(0,0))+theme(strip.placement = "outside",strip.background = element_blank(),strip.text = element_text(face = "bold"))
+ggplot(phyloMETA,aes(reorder(set,value),value,fill= variable))+geom_bar(stat='identity',position=position_dodge())+scale_fill_manual(values=c('black','darkgray','lightgray'))+theme_classic()+facet_wrap(~variable)+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_y_continuous(expand = c(0,0))+theme(strip.placement = "outside",strip.background = element_blank(),strip.text = element_text(face = "bold"))+xlab('marker sets')
 
+ggplot(phyloMETA,aes(reorder(set,value),value,fill= variable))+geom_bar(stat='identity',position=position_dodge())+scale_fill_manual(values=c('black','darkgray','lightgray'))+theme_classic()+facet_wrap(~variable,scale='free_y')+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_y_continuous(expand = c(0,0))+theme(strip.placement = "outside",strip.background = element_blank(),strip.text = element_text(face = "bold"))+xlab('marker sets')
 
 
 #########################################
@@ -68,7 +70,7 @@ midRoot_raxml_ANVIO_SCO_AA = ladderize(midpoint.root(raxml_ANVIO_SCO_AA))
 dendSCO = chronos(midRoot_raxml_ANVIO_SCO_AA)
 dendSCO = as.dendrogram(dendSCO)
 
-#raxml_Ribosomal_Proteins_AA = read.tree("~/Downloads/ds-2/RAxML_bipartitions.Ribosomal_AA")
+raxml_Ribosomal_Proteins_AA = read.tree("~/DATA/MarinobacterGenomics/2018_ProkComp/trees/concatenated_Ribosomal_proteins_AA.fa.bmge.treefile")
 #raxml_Ribosomal_Proteins_AA = read.tree("~/Downloads/ds-2/RAxML_bipartitions.Ribosomal_AA")
 midRoot_raxml_Ribosomal_Proteins_AA = ladderize(midpoint.root(raxml_Ribosomal_Proteins_AA))
 dendRP = chronos(midRoot_raxml_Ribosomal_Proteins_AA)
