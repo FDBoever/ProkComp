@@ -89,6 +89,43 @@ dendRinke = chronos(midRoot_raxml_Rinke_AA)
 dendRinke = as.dendrogram(dendRinke)
 
 #########################################
+#	tree import and dendogram transformation
+#########################################
+ANVIO_cat = read.table('~/DATA/MarinobacterGenomics/2018_ProkComp/ANVIO_CAT.txt',header=TRUE,sep="\t")
+ANVIO_cat = ANVIO_cat[grepl(paste(midRoot_raxml_ANVIO_SCO_AA$tip.label,collapse='|'), ANVIO_cat$name),]
+rownames(ANVIO_cat) = ANVIO_cat$name
+ANVIO_cat  = ANVIO_cat[midRoot_raxml_ANVIO_SCO_AA$tip.label,]
+
+
+t1 = ggtree(midRoot_raxml_ANVIO_SCO_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_point2(aes(subset=!isTip), color='black', size=2)+ geom_tiplab(size=2) + xlim(0,2)
+
+t1 = ggtree(midRoot_raxml_ANVIO_SCO_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(size=2) + xlim(0,1)
+t2 = ggtree(midRoot_raxml_Campbell_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(size=2)+ xlim(0,1)
+t3 = ggtree(midRoot_raxml_Rinke_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) +  geom_tiplab(size=2)+ xlim(0,1)
+t4 = ggtree(midRoot_raxml_Ribosomal_Proteins_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(size=2)+ xlim(0,0.5)
+
+multiplot(t1,t2,t3,t4,cols=4)
+
+t1 =ggtree(midRoot_raxml_ANVIO_SCO_AA) %<+% ANVIO_cat +  geom_tiplab(aes(color = group2)) + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ xlim(0,1)
+t2 = ggtree(midRoot_raxml_Campbell_AA) %<+% ANVIO_cat +  geom_tiplab(aes(color = group2)) + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ xlim(0,1)
+t3 = ggtree(midRoot_raxml_Rinke_AA) %<+% ANVIO_cat +  geom_tiplab(aes(color = group2)) + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ xlim(0,1)
+t4 =ggtree(midRoot_raxml_Ribosomal_Proteins_AA) %<+% ANVIO_cat +  geom_tiplab(aes(color = group2)) + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ xlim(0,1)
+
+multiplot(t1,t2,t3,t4,cols=4)
+
+
+t1 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
+t2 = ggtree(midRoot_raxml_Campbell_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
+t3 = ggtree(midRoot_raxml_Rinke_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
+t4 = ggtree(midRoot_raxml_Ribosomal_Proteins_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
+
+ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = SS),size=3) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+theme(legend.position='right')+geom_tiplab()
+
+
+
+
+
+#########################################
 #	make a list of dendrograms
 #########################################
 
