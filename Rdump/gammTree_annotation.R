@@ -1,6 +1,15 @@
+#
+#	gammaTree_annotation.R
+#
+# 	Script designed to flexibly visualise large tree, example a Gammaproteobacterial tree with +1000 organisms
+#
+####################
+
 library(ggtree)
 library(dplyr)
 library(phytools)
+
+#####################
 
 
 bigTree = read.tree('~/DATA/MarinobacterGenomics/miscl/FAA_Gamma_MB2.tree.nwk')
