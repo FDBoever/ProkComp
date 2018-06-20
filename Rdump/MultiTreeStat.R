@@ -59,6 +59,27 @@ ggplot(phyloMETA,aes(reorder(set,value),value,fill= variable))+geom_bar(stat='id
 
 ggplot(phyloMETA,aes(reorder(set,value),value,fill= variable))+geom_bar(stat='identity',position=position_dodge())+scale_fill_manual(values=c('black','darkgray','lightgray'))+theme_classic()+facet_wrap(~variable,scale='free_y')+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_y_continuous(expand = c(0,0))+theme(strip.placement = "outside",strip.background = element_blank(),strip.text = element_text(face = "bold"))+xlab('marker sets')
 
+#########################################
+#	COLORS
+#########################################
+
+colors = c(
+rgb(57,129,29, maxColorValue=255),#adhaerens
+rgb(134,218,129, maxColorValue=255),#alg
+rgb(166,216,212, maxColorValue=255),#ant
+rgb(242,169,104, maxColorValue=255),#ex
+
+rgb(242,236,112, maxColorValue=255), #hydrocarb
+rgb(227,143,221, maxColorValue=255),#lipo
+
+rgb(137,137,137, maxColorValue=255),#other
+rgb(118,174,207, maxColorValue=255),#psych
+rgb(131,115,27, maxColorValue=255),#sedim
+rgb(179,77,34, maxColorValue=255)#vinifirmus
+)
+
+Habitat_colors = c('gray',"#E41A1C","#F37912","#FFD422","#43997A","#658E67","#5D6795","#A35390","#B85F49")
+
 
 #########################################
 #	tree import and dendogram transformation
@@ -95,6 +116,8 @@ ANVIO_cat = read.table('~/DATA/MarinobacterGenomics/2018_ProkComp/ANVIO_CAT.txt'
 ANVIO_cat = ANVIO_cat[grepl(paste(midRoot_raxml_ANVIO_SCO_AA$tip.label,collapse='|'), ANVIO_cat$name),]
 rownames(ANVIO_cat) = ANVIO_cat$name
 ANVIO_cat  = ANVIO_cat[midRoot_raxml_ANVIO_SCO_AA$tip.label,]
+ANVIO_cat[ANVIO_cat$SS=='sediment','SS'] = 'Sediment'
+
 
 
 t1 = ggtree(midRoot_raxml_ANVIO_SCO_AA) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_point2(aes(subset=!isTip), color='black', size=2)+ geom_tiplab(size=2) + xlim(0,2)
@@ -119,8 +142,48 @@ t2 = ggtree(midRoot_raxml_Campbell_AA,branch.length = 'none' ) %<+% ANVIO_cat + 
 t3 = ggtree(midRoot_raxml_Rinke_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
 t4 = ggtree(midRoot_raxml_Ribosomal_Proteins_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)
 
-ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_point(aes(color = SS),size=3) + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+theme(legend.position='right')+geom_tiplab()
 
+#color coded based on habitat
+t1.1 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) +geom_tippoint(aes(color= SS), alpha=1,size=3) +  scale_color_manual(values= Habitat_colors)#+theme(legend.position='right')+geom_tiplab()
+t2.1 = ggtree(midRoot_raxml_Campbell_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) +geom_tippoint(aes(color= SS), alpha=1,size=3) +  scale_color_manual(values= Habitat_colors)#+theme(legend.position='right')+geom_tiplab()
+t3.1 = ggtree(midRoot_raxml_Rinke_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) +geom_tippoint(aes(color= SS), alpha=1,size=3) +  scale_color_manual(values= Habitat_colors)#+theme(legend.position='right')+geom_tiplab()
+t4.1 = ggtree(midRoot_raxml_Ribosomal_Proteins_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) +geom_tippoint(aes(color= SS), alpha=1,size=3) +  scale_color_manual(values=Habitat_colors)#+theme(legend.position='right')+geom_tiplab()
+multiplot(t1.1,t2.1,t3.1,t4.1,cols=4)
+
+
+t1 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none',layout="circular" ) %<+% ANVIO_cat + geom_point(aes(color = group2),size=3) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=2)
+
+t12 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=3)
+t12 = open_tree(t12, angle=180)
+t13 = ggtree(midRoot_raxml_Campbell_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=3)
+t13 = open_tree(t13, angle=180)
+t14 = ggtree(midRoot_raxml_Rinke_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=3)
+t14 = open_tree(t14, angle=180)
+t15 = ggtree(midRoot_raxml_Ribosomal_Proteins_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=3)
+t15 = open_tree(t15, angle=180)
+
+multiplot(t12,t13,t14,t15)
+
+t12 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= group2), alpha=1,size=3)
+t12 = open_tree(t12, angle=180)+theme(legend.position='bottom')
+t12.1 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values= Habitat_colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= SS), alpha=1,size=3)
+t12.1 = open_tree(t12.1, angle=180)+theme(legend.position='bottom')
+
+
+
+ANVIO_cat$GC = traitGC[rownames(ANVIO_cat)]
+ANVIO_cat$size = traitSize[rownames(ANVIO_cat)]
+
+t12.2 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= GC), alpha=1,size=3)+scale_colour_gradient(low = "white", high = "darkslategray")
+t12.2 = open_tree(t12.2, angle=180)+theme(legend.position='bottom')
+
+t12.3 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat + geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= size), alpha=1,size=3)+scale_colour_gradient(low = "white", high = "burlywood4")
+t12.3 = open_tree(t12.3, angle=180)+theme(legend.position='bottom')
+
+
+t12.1 = ggtree(midRoot_raxml_ANVIO_SCO_AA,branch.length = 'none' ) %<+% ANVIO_cat +  scale_colour_manual(values= Habitat_colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2) + geom_tiplab(offset=1.2, size=2,aes(angle=angle))+geom_tippoint(aes(color= SS), alpha=1,size=3) 
+t12.1 <-  gheatmap(t12.1, data.frame(traitGC), width=0.05, low="white", high="darkslategray", colnames = FALSE)
+t12.1 = open_tree(t12.1, angle=180)+theme(legend.position='bottom')
 
 
 
