@@ -38,8 +38,6 @@ library(ggplot2)
 library(Hmisc)
 library(cowplot)
 
-
-
 #--------------------------------------------------------------------------------------------
 #	Load PANGENOME DATA 
 #--------------------------------------------------------------------------------------------
@@ -105,11 +103,6 @@ rgb(179,77,34, maxColorValue=255)#vinifirmus
 )
 
 Habitat_colors = c('gray',"#E41A1C","#F37912","#FFD422","#43997A","#658E67","#5D6795","#A35390","#B85F49")
-
-
-
-
-
 
 
 #--------------------------------------------------------------------------------------------
@@ -432,77 +425,13 @@ plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv",
           rel_widths = c(2, 1), rel_heights = c(1, 2))
           
 
-
-
-pmain <- ggscatter(CheckM2_annotated, x = "GC", y = "Coding_density",
-                 color = "lifestyle", palette = "jco",
-                 size = 2, alpha = 1,rug=TRUE)
-# Marginal densities along x axis
-xdens <- axis_canvas(pmain, axis = "x")+
-  geom_density(data = CheckM2_annotated, aes(x = GC, fill = lifestyle),
-              alpha = 0.7, size = 0.2)+
-  ggpubr::fill_palette("jco")
-# Marginal densities along y axis
-# Need to set coord_flip = TRUE, if you plan to use coord_flip()
-ydens <- axis_canvas(pmain, axis = "y", coord_flip = TRUE)+
-  geom_density(data = CheckM2_annotated, aes(x = Coding_density, fill = lifestyle),
-                alpha = 0.7, size = 0.2)+
-  coord_flip()+
-  ggpubr::fill_palette("jco")
-p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
-p2<- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
-ggdraw(p2)
-
-
-pmain <- ggscatter(CheckM2_annotated, x = "num_genes_per_kb", y = "Coding_density",
-                 color = "lifestyle", palette = "jco",
-                 size = 2, alpha = 1,rug=TRUE)
-# Marginal densities along x axis
-xdens <- axis_canvas(pmain, axis = "x")+
-  geom_density(data = CheckM2_annotated, aes(x = num_genes_per_kb, fill = lifestyle),
-              alpha = 0.7, size = 0.2)+
-  ggpubr::fill_palette("jco")
-# Marginal densities along y axis
-# Need to set coord_flip = TRUE, if you plan to use coord_flip()
-ydens <- axis_canvas(pmain, axis = "y", coord_flip = TRUE)+
-  geom_density(data = CheckM2_annotated, aes(x = Coding_density, fill = lifestyle),
-                alpha = 0.7, size = 0.2)+
-  coord_flip()+
-  ggpubr::fill_palette("jco")
-p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
-p2<- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
-ggdraw(p2)
-
-
-pmain <- ggscatter(CheckM2_annotated, x = "predicted_genes", y = "num_genes",
-                 color = "group2", palette = "jco",
-                 size = 2, alpha = 1,rug=TRUE)
-# Marginal densities along x axis
-xdens <- axis_canvas(pmain, axis = "x")+
-  geom_density(data = CheckM2_annotated, aes(x = predicted_genes, fill = group2),
-              alpha = 0.7, size = 0.2)+
-  ggpubr::fill_palette("jco")
-# Marginal densities along y axis
-# Need to set coord_flip = TRUE, if you plan to use coord_flip()
-ydens <- axis_canvas(pmain, axis = "y", coord_flip = TRUE)+
-  geom_density(data = CheckM2_annotated, aes(x = num_genes, fill = group2),
-                alpha = 0.7, size = 0.2)+
-  coord_flip()+
-  ggpubr::fill_palette("jco")
-p1 <- insert_xaxis_grob(pmain, xdens, grid::unit(.2, "null"), position = "top")
-p2<- insert_yaxis_grob(p1, ydens, grid::unit(.2, "null"), position = "right")
-ggdraw(p2)
-
-
 #--------------------------------------------------------------------------------------------
 # 	Genome SIMILARITY?
 # 	ANI, AAI, ANI, codon_usage, kmer_usage  
 #--------------------------------------------------------------------------------------------
 
-#Tetra = read.table('~/DATA/MarinobacterGenomics/FINAL_PROKCOMP/JSpecies_Tetra.txt',header=TRUE)
-
-#ANIb is calcultated through pyani.py
-#AAI is calculated with compareM
+#	ANIb is calcultated through pyani.py
+#	AAI is calculated with compareM
 
 #------ AVERAGE NUCLEOTIDE IDENTITY------------
 
@@ -623,13 +552,10 @@ u2 = ggscatter(combinedAA_Codon, x = "AAI", y = "distAA", size = 0.5, alpha = 1,
 u3 = ggscatter(combinedAA_Codon, x = "AAI", y = "distCodon", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 75, label.sep = "\n"),rug = TRUE)
 u4 = ggscatter(combinedAA_Codon, x = "OrtFrac", y = "distAA", size = 0.5, alpha = 1,add = c("reg.line"),add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 50, label.sep = "\n"),rug = TRUE)
 u5 = ggscatter(combinedAA_Codon, x = "OrtFrac", y = "distCodon", size = 0.5, alpha = 1,add = c("reg.line"),add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 50, label.sep = "\n"),rug = TRUE)
-
 u6 = ggscatter(combinedAA_Codon, x = "distAA", y = "distCodon", size = 0.5, alpha = 1,add = c("reg.line"),add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 0.45, label.sep = "\n"),rug = TRUE)
 u7 = ggscatter(combinedAA_Codon, x = "distAA", y = "corAA", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 0.9, label.sep = "\n"),rug = TRUE)
 u8 = ggscatter(combinedAA_Codon, x = "distCodon", y = "corCodon", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 0.3, label.sep = "\n"),rug = TRUE)
 u9 = ggscatter(combinedAA_Codon, x = "corAA", y = "corCodon", size = 0.5, alpha = 1,add = "reg.line",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.x = 0.98, label.sep = "\n"),rug = TRUE)
-
-
 u10 = ggscatter(combinedAA_Codon, x = "ANIb", y = "AAI", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.sep = "\n"),rug = TRUE)
 u11 = ggscatter(combinedAA_Codon, x = "ANIb", y = "OrtFrac", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.sep = "\n"),rug = TRUE)
 u12 = ggscatter(combinedAA_Codon, x = "ANIb", y = "distAA", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.sep = "\n"),rug = TRUE)
@@ -640,9 +566,6 @@ u15 = ggscatter(combinedAA_Codon, x = "ANIb", y = "distCodon", size = 0.5, alpha
 ggscatter(combinedAA_Codon, x = "AliCov", y = "distAliLengths", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.sep = "\n"),rug = TRUE)
 
 ggscatter(combinedAA_Codon, x = "ANIb", y = "Tetra", size = 0.5, alpha = 1,add = "loes",add.params = list(size=0.1,color = "darkgrey", fill = "lightgray"),conf.int = TRUE, cor.coef = TRUE, cor.coeff.args = list(method = "pearson", label.sep = "\n"),rug = TRUE)
-
-
-
 
 multiplot(u10,u11,u12,u13,u14,u15,cols=3)
 multiplot(u1,u2,u3,u4,u5,u6,u7,u8,u9,cols=3)
@@ -1789,6 +1712,54 @@ g.8 = ggplot(ds, aes(x=reorder(groupX1,mean), y= mean, fill= taxorder)) + geom_b
 multiplot(g.1, g.2, g.3, g.4,cols=2)
 multiplot(g.3, g.4,g.7,g.8,cols=2)
 multiplot(g.1, g.2,g.5,g.6,cols=2)
+
+#----------------------------------------------
+#	Correlate important measures
+#----------------------------------------------
+
+
+
+PhyloDistMatrix<-cophenetic(tree2)
+PhyloDistMatrix = PhyloDistMatrix[rownames(ANIb),rownames(ANIb)]
+melt3 = melt(PhyloDistMatrix)
+
+combinedfundphylo = cbind(melt3$value,ANIblong$value,AAIlong$value,melt(as.matrix(Mdist.blast))$value,melt(as.matrix(Jdist.blast))$value)
+colnames(combinedfundphylo)=c('phylo','ANIb','AAI','Manhattan','Jaccard')
+combinedfundphylo= data.frame(combinedfundphylo)
+plot(combinedfundphylo)
+
+combinedfundphylo$taxorder = AAIgroup$taxorder
+
+l1 = ggplot(combinedfundphylo,aes(phylo,ANIb))+geom_point()+geom_smooth(method='loess')+scale_y_reverse()+xlab('cophenetic distance (SCO)')+ylab('ANIb')
+l2 = ggplot(combinedfundphylo,aes(phylo,AAI))+geom_point()+geom_smooth(method='loess')+scale_y_reverse()+xlab('cophenetic distance (SCO)')+ylab('AAI')
+l3 = ggplot(combinedfundphylo,aes(phylo, Jaccard))+geom_point()+geom_smooth(method='loess')+xlab('cophenetic distance (SCO)')+ylab('Jaccard Distance (accessory genes)')
+l4 = ggplot(combinedfundphylo,aes(phylo,Manhattan))+geom_point()+geom_smooth(method='loess')+xlab('cophenetic distance (SCO)')+ylab('Manhattan Distance (accessory genes)')
+multiplot(l1,l2,l3,l4,cols=4)
+
+l5 = ggplot(combinedfundphylo,aes(ANIb,phylo))+geom_point()+geom_smooth(method='loess')+scale_y_reverse()+xlab('ANIb')+ylab('cophenetic disstance (SCO)')
+l6 = ggplot(combinedfundphylo,aes(ANIb,AAI))+geom_point()+geom_smooth(method='loess')+xlab('ANIb')+ylab('AAI')
+l7 = ggplot(combinedfundphylo,aes(ANIb, Jaccard))+geom_point()+geom_smooth(method='loess')+xlab('ANIb')+ylab('Jaccard Distance (accessory genes)')
+l8 = ggplot(combinedfundphylo,aes(ANIb,Manhattan))+geom_point()+geom_smooth(method='loess')+xlab('ANIb')+ylab('Manhattan Distance (accessory genes)')
+multiplot(l5,l6,l7,l8,cols=4)
+
+combinedfundphylo_molten = melt(combinedfundphylo,id=c('taxorder'))
+ggplot(combinedfundphylo_molten,aes(taxorder, value))+geom_boxplot()+facet_wrap(~variable,scales="free_y")
+
+library(GGally)
+ggpairs(combinedfundphylo, aes(colour = taxorder, alpha = 0.4),lower = list(continuous = wrap("smooth", 
+                      alpha = 0.3,    
+                      size=0.1))
+)
+
+
+my_fn <- function(data, mapping, method="loess", ...){
+      p <- ggplot(data = data, mapping = mapping) + 
+      geom_point() + 
+      geom_smooth(method=method, ...)
+      p
+    }
+
+ggpairs(combinedfundphylo, lower = list(continuous = my_fn))
 
 
 #----------------------------------------------
