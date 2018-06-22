@@ -15,7 +15,7 @@ library(phyloseq)
 library(randomForest)
 library(dplyr)
 library(ggplot2)
-library(DESeq2)
+#library(DESeq2)
 
 
 #Load in the pan-matrix (could be any nxp matrix) derived from ProkComp
@@ -38,6 +38,7 @@ geneCount = round(as(panmatrix, "matrix"), digits = 0)
 geneCountPA = geneCount 
 geneCountPA[geneCountPA>1]=1
 
+
 ######################################################################################
 #	INITIAL FILTERING STEP
 #	All downstream analysis are preferably run on non-core, and non-singleton genes
@@ -47,12 +48,10 @@ geneCountPA[geneCountPA>1]=1
 
 
 CoreGenes = geneCountPA[rowSums(geneCountPA)== length(colnames(geneCountPA)), ]
-
 none_CoreGenes = geneCountPA[!rowSums(geneCountPA)== length(colnames(geneCountPA)), ]
 none_core_none_signleton = none_CoreGenes[!rowSums(none_CoreGenes)==1, ]
 
 #geneCount only containing non-core and non-singleton genes
-
 geneCount = geneCount[rownames(none_core_none_signleton),]
 
 
@@ -92,9 +91,9 @@ data=t(data)
 kruskal.wallis.alpha=0.001
 kruskal.wallis.table <- data.frame()
 
-
+#----------------------------------------------------------------------------------
 # Calculate Kruskal-Wallis tests for each of the genes
-
+#----------------------------------------------------------------------------------
 for (i in 1:dim(data)[2]) {
  	ks.test <- kruskal.test(data[,i], g=groups)
  	kruskal.wallis.table <- rbind(kruskal.wallis.table,data.frame(id= colnames(data)[i], p.value=ks.test$p.value))
@@ -103,9 +102,9 @@ for (i in 1:dim(data)[2]) {
            dim(data)[2], "; p-value=", ks.test$p.value,"\n", sep=""))
 }
 
-#########
-
+#----------------------------------------------------------------------------------
 #Add the corrections in additional collumns
+#----------------------------------------------------------------------------------
 
 kruskal.wallis.table$E.value <- kruskal.wallis.table$p.value * dim(kruskal.wallis.table)[1]
 kruskal.wallis.table$FWER <- pbinom(q=0, p=kruskal.wallis.table$p.value, 
@@ -124,9 +123,10 @@ kruskal.wallis.table <- kruskal.wallis.table[order(kruskal.wallis.table$p.value,
                                                   decreasing=FALSE), ]
 
 
-#########
-
+#----------------------------------------------------------------------------------
 #Select those genes that have FDR corrected p-values <0.001
+#----------------------------------------------------------------------------------
+
 kruskal.wallis.alpha=0.001
 last.significant.element <- max(which(kruskal.wallis.table$pvalsFDR <= kruskal.wallis.alpha))
 selected <- 1:last.significant.element
@@ -170,9 +170,9 @@ kwp <- kwp + scale_y_continuous(expand = c(0, 0))
 venn(list('0.05' = Kruskal.sig.0.05, '0.01' = Kruskal.sig.0.01,'0.001'= Kruskal.sig))
 
 
-#########
-
+#----------------------------------------------------------------------------------
 #Now we plot taxa significantly different between the categories
+#----------------------------------------------------------------------------------
 
 df<-NULL
 for(i in diff.cat){
@@ -252,19 +252,16 @@ RFselect =  as.character(var_importance[1:1000,]$variable)
 library(ape)
 library(phytools)
 
-######PA versus NPA######
-#Map<-read.table("/pine/scr/i/s/isai/3837_march_2017/metadata_3837_genomes_june2016_complete.tsv",header=T,sep="\t")
-Map<-ANVIO_cat
+Map<-grouping_factors
 Tab<-AnvioData
-Tab<-geneCount
 
 df_trait=cbind()
-for(group in unique(ANVIO_cat$group2)){
+for(group in unique(Map $group2)){
 	trait<-as.numeric(ifelse(Map$group2==group,1,0))
 	df_trait= cbind(df_trait,trait)
 }
-rownames(df_trait)<-Map$name
-colnames(df_trait)<-unique(ANVIO_cat$group2)
+rownames(df_trait)<-rownames(Map)
+colnames(df_trait)<-unique(Map$group2)
 
 #remove low quality genomes
 df_trait = df_trait[CheckMANVIO2$Bin_Id,]
@@ -288,21 +285,23 @@ Tab1 = as.data.frame.matrix(Tab)
 Tab1[Tab1>0] <- 1
 df_Tab_pres_abs<-cbind(DF4,Tab1)
 
-df_Tab[rownames(geneCount),]
+write.table(df_trait,"traits_scoary.csv",row.names=T,col.names=NA,sep=",",append=F,quote=F)
+write.table(df_Tab,"matrix_scoary_abundance.csv",row.names=F,col.names=T,sep=",",append=F,quote=F)
+write.table(df_Tab_pres_abs,"matrix_scoary_Presence_Absence.csv",row.names=F,col.names=T,sep=",",append=F,quote=F)
 
+write.table(df_Tab[rownames(geneCount),],"matrix_scoary_abundance.csv",row.names=F,col.names=T,sep=",",append=F,quote=F)
 
-write.table(df_trait,"traits_scoary.tsv",row.names=T,col.names=NA,sep=",",append=F,quote=F)
-write.table(df_Tab,"matrix_scoary_abundance.tsv",row.names=F,col.names=T,sep=",",append=F,quote=F)
-write.table(df_Tab_pres_abs,"matrix_scoary_Presence_Absence.tsv",row.names=F,col.names=T,sep=",",append=F,quote=F)
+#write.table(df_Tab[,colnames(geneCount)],"matrix_scoary_abundance.tsv",row.names=F,col.names=T,sep=",",append=F,quote=F)
 
-write.table(df_Tab[rownames(geneCount),],"matrix_scoary_abundance.tsv",row.names=F,col.names=T,sep=",",append=F,quote=F)
 
 write.tree(drop.tip(tree2, tree2 $tip.label[-match(CheckMANVIO2$Bin_Id, tree2 $tip.label)]), file = "~/pruned_tree.newick")
 write.tree(drop.tip(tree2, tree2 $tip.label[-match(colnames(geneCount), tree2 $tip.label)]), file = "~/pruned_tree")
 
 
 #	RUN SCOARY IN THE TERMINAL
-# /Users/sa01fd/Genomics/miniconda2/bin/scoary -t /Users/sa01fd/traits_scoary.tsv -g /Users/sa01fd/matrix_scoary.tsv -n /Users/sa01fd/DATA/MarinobacterGenomics/2018_ProkComp/SCO_682_RAxML_bipartitions_autosubst_b100 -e 1000 -p 1.0 --threads 8 -s 6 -o ./TEST4_SCOARY
+# /Users/sa01fd/Genomics/miniconda2/bin/scoary -t /Users/sa01fd/traits_scoary.csv -g /Users/sa01fd/matrix_scoary_Presence_Absence.csv -n /Users/sa01fd/DATA/MarinobacterGenomics/2018_ProkComp/trees/SCO_kde.fas.treefile  -e 1000 -p 1.0 --threads 8 -s 6 -o ./FINAL_scoary
+
+#scoary -t /Users/sa01fd/traits_scoary.tsv -g /Users/sa01fd/matrix_scoary_abundance.tsv -n /Users/sa01fd/DATA/MarinobacterGenomics/2018_ProkComp/trees/SCO_kde.fas.treefile  -e 1000 -p 1.0 --threads 8 -s 6 -o ./FINAL_scoary
 
 ##############################################
 #	COG CATEGORY LIST

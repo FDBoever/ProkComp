@@ -168,7 +168,7 @@ cladecolors = as.character(factor(ANVIO_cat_restricted$group2, labels = colors))
 
 
 # Visualisation STEP: explore the result tables graphically, as an example we show the distrubution of the summary statistics for all analysed genomes (CheckM)
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 CheckM_interest = CheckM[,c('Bin_Id','Completeness','Contamination','Strain_heterogeneity','Genome_size','ambiguous_bases','scaffolds','contigs','N50','N50contigs','Mean_scaffold_length','GC','GC_std','Coding_density','predicted_genes')]
 moltenCheckM = melt(CheckM_interest)
@@ -192,7 +192,7 @@ ggboxplot(moltenCheckMANVIO2, x = "variable",
 
 
 # STEP ONE: explore the result tables graphically, as an example we show the distrubution of the summary statistics for all analysed genomes (CheckM)
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Rememver, we made several dataframes with different cut-offs
 # CheckM = all genomes analysed by CheckM
 # CheckM2 = all genomes passing the Completeness > 98, Contamination < 5 filter (high stringency)
@@ -205,22 +205,16 @@ g2 = gghistogram(CheckM, x = "Contamination", add = "mean", rug = TRUE,bins=100,
 g3 = gghistogram(CheckM, x = "Strain_heterogeneity", add = "mean", rug = TRUE,bins=100,color="darkred")
 v1 = gghistogram(data.frame(CheckM), x = "N50", add = "mean", rug = TRUE,bins=100,color="darkred")
 v2 = gghistogram(data.frame(CheckM), x = "scaffolds", add = "mean", rug = TRUE,bins=100,color="darkred")
-multiplot(g1,g2,g3,cols=3)
-
 g4 = gghistogram(CheckM2, x = "Completeness", add = "mean", rug = TRUE,bins=100,color="darkred")
 g5 = gghistogram(CheckM2, x = "Contamination", add = "mean", rug = TRUE,bins=100,color="darkred")
 g6 = gghistogram(CheckM2, x = "Strain_heterogeneity", add = "mean", rug = TRUE,bins=100,color="darkred")
 v3 = gghistogram(data.frame(CheckM2), x = "N50", add = "mean", rug = TRUE,bins=100,color="darkred")
 v4 = gghistogram(data.frame(CheckM2), x = "scaffolds", add = "mean", rug = TRUE,bins=100,color="darkred")
-multiplot(g1,g4,g2,g5,g3,g6,cols=3)
-
 g7 = gghistogram(CheckM3, x = "Completeness", add = "mean", rug = TRUE,bins=100,color="darkred")
 g8 = gghistogram(CheckM3, x = "Contamination", add = "mean", rug = TRUE,bins=100,color="darkred")
 g9 = gghistogram(CheckM3, x = "Strain_heterogeneity", add = "mean", rug = TRUE,bins=100,color="darkred")
 v5 = gghistogram(data.frame(CheckM3), x = "N50", add = "mean", rug = TRUE,bins=100,color="darkred")
 v6 = gghistogram(data.frame(CheckM3), x = "scaffolds", add = "mean", rug = TRUE,bins=100,color="darkred")
-multiplot(g1,g4,g7,g2,g5,g8,g3,g6,g9,cols=3)
-
 g10 = gghistogram(CheckM4, x = "Completeness", add = "mean", rug = TRUE,bins=100,color="darkred")
 g11 = gghistogram(CheckM4, x = "Contamination", add = "mean", rug = TRUE,bins=100,color="darkred")
 g12 = gghistogram(CheckM4, x = "Strain_heterogeneity", add = "mean", rug = TRUE,bins=100,color="darkred")
@@ -236,7 +230,7 @@ ggbarplot(STRCheckM, x = "stringency", y = "nr_of_genomes",fill='black',color = 
 print(STRCheckM)
 
 # STEP TWO: Compare the results of different CheckM filter stringencies to the values obtained from ANVIO
-#--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #ANVIO UNFILTERED
 g13 = gghistogram(CheckMANVIO, x = "percent_completion", add = "mean", rug = TRUE,bins=100,color="darkred")
@@ -268,111 +262,7 @@ g25 = gghistogram(BUSCOCheckMANVIO, x = "M", add = "mean", rug = TRUE,bins=100,c
 multiplot(g18,g22, g19, g23,g20, g24,g21,g25,cols=4)
 
 
-
-
-CheckM$Genome_size = CheckM$Genome_size/1000000
-
-# First Inspection
-sp1 <- ggscatter(CheckM, x = "Genome_size", y = "predicted_genes", alpha = 1, rug=TRUE,size=0.75,color='Contamination',add = "reg.line", conf.int = TRUE)          
-xplot <- ggboxplot(CheckM,  y = "Genome_size", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM, y = "predicted_genes", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp1 <- sp1 +  gradient_color(c('black',"blue", "purple",'red', "orange"))+stat_cor(method = "spearman", label.y = 5000)
-yplot <- yplot + rremove("legend") + rremove('xylab') + rremove('ticks') 
-xplot <- xplot  + rremove("legend") + rremove('xylab') + rremove('ticks') 
-plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 4))
-
-sp2 <- ggscatter(CheckMANVIO2, x = "Genome_size", y = "predicted_genes", alpha = 1, rug=TRUE,size=0.75,color='Contamination',add = "reg.line", conf.int = TRUE)          
-xplot <- ggboxplot(CheckM2,  y = "Genome_size", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2, y = "predicted_genes", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp2 <- sp2 +  gradient_color(c('black',"blue", "purple",'red', "orange"))+stat_cor(method = "spearman", label.y = 5000)
-yplot <- yplot + rremove("legend") + rremove('xylab') + rremove('ticks') 
-xplot <- xplot  + rremove("legend") + rremove('xylab') + rremove('ticks') 
-plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 4))
-
-multiplot(sp1,sp2,cols=2)
-
 ################################################################
-
-
-sp <- ggscatter(CheckM, x = "Completeness", y = "Contamination", size = 0.5, alpha = 1, ggtheme = theme_bw(),rug=TRUE)             
-xplot <- ggboxplot(CheckM,  y = "Completeness", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM, y = "Contamination", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o1 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckM, x = "Strain_heterogeneity", y = "Contamination", size = 0.5, alpha = 1, ggtheme = theme_bw(),rug=TRUE)             
-xplot <- ggboxplot(CheckM,  y = "Strain_heterogeneity", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM, y = "Contamination", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o2 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckM, x = "Contamination", y = "N50", size = 0.5, alpha = 1, ggtheme = theme_bw(),rug=TRUE)             
-xplot <- ggboxplot(CheckM,  y = "Contamination", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM, y = "N50", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o3 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckM, x = "Completeness", y = "N50", size = 0.5, alpha = 1, ggtheme = theme_bw(),rug=TRUE)             
-xplot <- ggboxplot(CheckM,  y = "Completeness", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM, y = "N50", alpha = 0.5, ggtheme = theme_bw(),add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o4 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-multiplot(o1,o4,o2,o3,cols=2)
-
-################################################################
-################################################################
-
-
-sp <- ggscatter(CheckMANVIO2, x = "Completeness", y = "Contamination", size = 0.5, alpha = 1,rug=TRUE)             
-xplot <- ggboxplot(CheckM2,  y = "Completeness", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2, y = "Contamination", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o1 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckMANVIO2, x = "Strain_heterogeneity", y = "Contamination", size = 0.5, alpha = 1,rug=TRUE)             
-xplot <- ggboxplot(CheckM2,  y = "Strain_heterogeneity", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2, y = "Contamination", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o2 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckMANVIO2, x = "Contamination", y = "N50", size = 0.5, alpha = 1, rug=TRUE)             
-xplot <- ggboxplot(CheckM2,  y = "Contamination", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2, y = "N50", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o3 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-
-sp <- ggscatter(CheckMANVIO2, x = "Completeness", y = "N50", size = 0.5, alpha = 1,rug=TRUE)             
-xplot <- ggboxplot(CheckM2,  y = "Completeness", alpha = 0.5,add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2, y = "N50", alpha = 0.5, add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+theme(axis.text.x=element_text(angle=45,hjust=1))
-sp <- sp + rremove("legend")
-yplot <- yplot + rremove("legend")
-xplot <- xplot  + rremove("legend")
-o4 = plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(3, 1), rel_heights = c(1, 3))
-multiplot(o1,o4,o2,o3,cols=2)
 
 #--------------------------------------------------------------------------------------------
 #	per clade?
@@ -382,48 +272,6 @@ names(ANVIO_cat2)=c('Bin_Id','group','group2','lifestyle','SS','sourceClass','la
 CheckM2_annotated = right_join(CheckMANVIO2, ANVIO_cat2, by=c('Bin_Id'))
 CheckM2_annotated = right_join(ANVIO_cat2, CheckMANVIO2, by=c('Bin_Id'))
 
-
-
-sp <- ggscatter(CheckM2_annotated, x = "Genome_size", y = "predicted_genes",
-                color = "group2", palette = "jco",
-                size = 1, alpha = 1,rug=TRUE)#,add = "reg.line")             
-# Marginal boxplot of x (top panel) and y (right panel)
-xplot <- ggboxplot(CheckM2_annotated, x = "group2", y = "Genome_size", 
-                   color = "group2", fill = "group2", palette = "jco",
-                   alpha = 0.5,add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2_annotated, x = "group2", y = "predicted_genes",
-                   color = "group2", fill = "group2", palette = "jco",
-                   alpha = 0.5,add = "jitter", add.params = list(size = 0.5, jitter = 0.2))
-# Cleaning the plots
-sp <- sp + rremove("legend")
-yplot <- yplot +  rremove("legend")+rremove('xylab') +theme(axis.text.x=element_text(angle=45,hjust=1)) 
-xplot <- xplot + rremove("legend")+rremove('xylab')  
-# Arranging the plot using cowplot
-#library(cowplot)
-plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(2, 1), rel_heights = c(1, 2))
-          
-          
-
-sp <- ggscatter(CheckM2_annotated, x = "GC", y = "Coding_density",
-                color = "group2", palette = "jco",
-                size = CheckM2$GC_sd, alpha = 1,rug=TRUE)#,add = "reg.line")             
-# Marginal boxplot of x (top panel) and y (right panel)
-xplot <- ggboxplot(CheckM2_annotated, x = "group2", y = "GC", 
-                   color = "group2", fill = "group2", palette = "jco",
-                   alpha = 0.5,add = "jitter", add.params = list(size = 0.5, jitter = 0.2))+coord_flip()# rotate()
-yplot <- ggboxplot(CheckM2_annotated, x = "group2", y = "Coding_density",
-                   color = "group2", fill = "group2", palette = "jco",
-                   alpha = 0.5,add = "jitter", add.params = list(size = 0.5, jitter = 0.2))
-# Cleaning the plots
-sp <- sp + rremove("legend")
-yplot <- yplot +  rremove("legend")+rremove('xylab') +theme(axis.text.x=element_text(angle=45,hjust=1)) 
-xplot <- xplot + rremove("legend")+rremove('xylab')  
-# Arranging the plot using cowplot
-#library(cowplot)
-plot_grid(xplot, NULL, sp, yplot, ncol = 2, align = "hv", 
-          rel_widths = c(2, 1), rel_heights = c(1, 2))
-          
 
 #--------------------------------------------------------------------------------------------
 # 	Genome SIMILARITY?
@@ -501,6 +349,13 @@ heatmap.2(as.matrix(data.matrix(cor(t(aa_usage2),method = 'pearson'))),trace="no
 #have a look which one of them are deviating
 heatmap.2(as.matrix(t(aa_usage2)),trace="none",scale="row",col=colorRampPalette(c('darkred','red','white','blue','darkblue'))(n = 150),dendrogram="column", ,ColSideColors= cladecolors,margins=c(10,10))
 
+#------ Ortholog genes ------------
+dat = CompareM[,c("Genome_A","Genome_B","orthologous_genes")]
+g <- graph.data.frame(dat, directed=FALSE)
+OrtGen = get.adjacency(g, attr="orthologous_genes", sparse=FALSE)
+
+#make sure we remove the low_quality genomes
+OrtGen = OrtGen[CheckMANVIO2$Bin_Id,CheckMANVIO2$Bin_Id]
 
 
 #------ Codon usage ------------
@@ -590,7 +445,6 @@ combinedAAI3 = right_join(ANVIO_cat, AAI3, by='name')
 #--------------------------------------------------------------------------------------------
 # 	similarity per clade? 
 #--------------------------------------------------------------------------------------------
-
 
 meltGroup = function(corMat, metaTax,group){
 	metaTax = metaTax[rownames(corMat),]
