@@ -975,8 +975,8 @@ plot_cluster_validation(ch_bray, ch_js, ch_rjs, legend=T, ylab="Calinski-Harabas
 #----------------------------------------------
 #	extract accessory genes
 #----------------------------------------------
-#AccesoryDF = PA_AnvioData[!rowSums(PA_AnvioData)==1, ]
-#AccesoryDF  = AccesoryDF[! rowSums(AccesoryDF)== length(colnames(AccesoryDF)), ]
+AccesoryDF = PA_AnvioData[!rowSums(PA_AnvioData)==1, ]
+AccesoryDF  = AccesoryDF[! rowSums(AccesoryDF)== length(colnames(AccesoryDF)), ]
 #RareAccesoryDF  = AccesoryDF[!rowSums(AccesoryDF)<7,]
 #GRareAccesoryDF  = AccesoryDF[!rowSums(AccesoryDF)>10,]
 #GRareAccesoryDF  = GRareAccesoryDF[!rowSums(GRareAccesoryDF)<2,]
@@ -1714,7 +1714,21 @@ as.phylo(ANVIOtree $Htree)
 
 tr1 = ggtree(as.phylo(ANVIOtree $Htree)) %<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('protein clusters')+geom_treescale()
 tr2 = ggtree(as.phylo(Pfamtree $Htree))%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('protein domains')+geom_treescale()
-#tr3 = ggtree(RAxMLRinkeRooted)%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('Rinke')+geom_treescale()
+tr3 = ggtree(tree2,branch.length='none')%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ggtitle('phylogeny')+geom_treescale()
+
+#FUNCTION VS PHYLOGENY
+multiplot(tr3,tr1,cols=2)
+
+tree2$edge.length[which(tree2$edge.length == 0)] <- 0.00001
+rep_tree_um <- chronopl(tree2,lambda = 0.1,tol = 0)
+rep_tree_d <- as.dendrogram(as.hclust.phylo(rep_tree_um))
+
+
+tanglegram(rep_tree_d,as.dendrogram(as.phylo(ANVIOtree $Htree)))
+
+tr3 = ggtree(rep_tree_um,branch.length='none')%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ggtitle('phylogeny')+geom_treescale()
+ggtree(tree2,branch.length='none')%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ggtitle('phylogeny')+geom_treescale()
+
 #tr4 = ggtree(RAxMLRiboProtRooted)%<+% ANVIO_cat + geom_point(aes(color = group2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('Ribosomal Proteins')+geom_treescale()
 #multiplot(tr1,tr2,tr3,tr4,cols=4)
 multiplot(tr1,tr2,cols=2)
