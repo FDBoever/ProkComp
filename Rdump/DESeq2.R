@@ -206,11 +206,47 @@ p + scale_color_manual(values=c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70
 
 set.seed(42)
 
+
+
+
+
+
 #prepare the dataset suitable for randomForest()
 RFdf = data.frame(t(geneCount),'group'=as.character(grouping_factors$group2))
 
 RF <- randomForest(group ~ ., data= RFdf)
 #RF <- randomForest(group ~ ., data= RFdf, importance=T, proximity=T,ntree=1500,keep.forest=F)
+
+
+n_tree = seq(from=1, to=10000, by=100)
+oob = data.frame()
+
+# Loop over each value of mtry and store result in a data frame
+for (i in n_tree) {
+  rf1 <- randomForest(group ~ ., data= RFdf, ntree=i) 
+  result = data.frame(mtry=i, OOB=rf1[["err.rate"]][ ,"OOB"])
+  oob = rbind(oob, result)
+} 
+
+oob_ntree = oob
+
+
+
+mtry = c(100,50,25,10,5,2,1)
+oob = data.frame()
+
+# Loop over each value of mtry and store result in a data frame
+for (i in mtry) {
+
+  rf1 <- randomForest(group ~ ., data= RFdf, ntree= 10000, mtry=round(length(colnames(t(geneCount)))/i)) 
+
+  result = data.frame(mtry=i, OOB=rf1[["err.rate"]][ ,"OOB"])
+  oob = rbind(oob, result)
+} 
+
+
+
+
 
 
 
@@ -322,7 +358,7 @@ cladetracker = c()
 plots = list()
 COG_distribution_all = data.frame(cbind(Var1=as.character(unique(ANVIO$COG_CATEGORY_ACC))))
 for(group in unique(ANVIO_cat$group2)){
-	scoary <- read.table(paste('/Users/sa01fd/Genomics/multigeneblast_1.1.14_macosx_commandline/Accessory_Scoary/',group,'_30_04_2018_0955.results.csv',sep=''),header=TRUE,sep=",") #protein clusters
+	scoary <- read.table(paste('/Users/sa01fd/FINAL_scoary2/',group,'_22_06_2018_1836.results.csv',sep=''),header=TRUE,sep=",") #protein clusters
 	
 	Scp <- ggplot(scoary, aes(x= reorder(genes, Benjamini_H_p), weight = Benjamini_H_p))
 	Scp <- Scp + geom_bar(color ='darkred') + ggtitle("")
@@ -530,12 +566,6 @@ multiplot(kwp,p, scp)
 ##################################################################
 
 
-
-
-
-
-
-
 venn(list('KruskalFDR' = Kruskal.sig, 'Random Forest' = RFselect))
 venn(list('KW+FDR<0.05' = Kruskal.sig.0.05, 'KW+FDR<0.01' = Kruskal.sig.0.01,'KW+FDR<0.001'= Kruskal.sig,'RandomForest[2000]'=RFselect))
 venn(list('KW+FDR<0.05' = Kruskal.sig.0.05, 'KW+FDR<0.01' = Kruskal.sig.0.01,'KW+FDR<0.001'= Kruskal.sig,'RandomForest[2000]'=RFselect,'Scoary'= Scoary.sig))
@@ -617,6 +647,8 @@ heatmap.2(as.matrix(t(combined_ordered_matrix)),trace="none"
 ,col=colorRampPalette(c("white","black","black","black","black","black"))(n = 150),srtCol=45,cexRow=0.6,cexCol=0.6,main='',margins=c(10,20),ColSideColors= as.character(cladecolorsHeat[rownames(combined_ordered_matrix)]),Colv= pruned_tree_d)
 
 
+##########
+
 
 mat = t(table(droplevels(subset(ANVIOfiltered, protein_cluster_id  %in% intersect)[,c('protein_cluster_id','genome_name')])))
 pruned_tree = drop.tip(tree2, tree2 $tip.label[-match(CheckMANVIO2$Bin_Id, tree2 $tip.label)])
@@ -633,6 +665,7 @@ combined_ordered_matrix <- mat[new_order,]
 
 
 RFselect =  as.character(var_importance[1:1000,]$variable)
+all.sig  = unique(c(as.character(RFselect), as.character(ScoaryEnrichedDepleted$gene), as.character(Kruskal.sig.0.05)))
 
 DF_significance = c()
 for(i in unique(ANVIOfiltered$protein_cluster_id)){
@@ -1368,12 +1401,12 @@ phyloseq = phyloseq(OTU, sampledata)
     iMDS  <- ordinate(phyloseq, "MDS", distance='bray')
     p <- plot_ordination(phyloseq, iMDS, color="group2",shape='quality')
     # Add title to each plot
-    p <- p + ggtitle(paste("MDS - Bray distance method", sep=""))+ geom_point(size=3) + scale_colour_manual(values = c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))
+    p <- p + ggtitle(paste("MDS - bray distance method", sep=""))+ geom_point(size=3) + scale_colour_manual(values = colors)
 
-    iMDS  <- ordinate(phyloseq, "MDS", distance='jaccard')
+    iMDS  <- ordinate(phyloseq, "MDS", distance='manhattan')
     pj <- plot_ordination(phyloseq, iMDS, color="group2",shape='quality')
     # Add title to each plot
-    pj <- pj + ggtitle(paste("MDS - Jaccard distance method", sep=""))+ geom_point(size=3) + scale_colour_manual(values = c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))
+    pj <- pj + ggtitle(paste("MDS - manhattan distance method", sep=""))+ geom_point(size=3) + scale_colour_manual(values = colors)
 
 multiplot(p,pj,cols=2)
 
@@ -1402,6 +1435,25 @@ multiplot(bp,jp,cols=2)
 
 
 ##########################################################################################################################
+
+Mapptree <- panTree(t(fullcount.sig),nboot=1000)
+fullCampbel = read.tree("~/DATA/MarinobacterGenomics/2018_ProkComp/RAxML_bipartitions.Campbell_AA")
+
+
+ladderize(RAxMLANVIORooted, right = FALSE)
+
+tr1 = ggtree(midpoint.root(as.phylo(Mapptree $Htree)),layout='circular') %<+% ANVIO_cat2 + geom_point(aes(color = group2,shape=quality,size=3)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('protein clusters')+geom_treescale()
+tr2 = ggtree(ladderize(midpoint.root(fullCampbel), right = FALSE),branch.length='none',layout='circular')%<+% ANVIO_cat2 + geom_point(aes(color = group2,shape=quality,size=3)) + scale_colour_manual(values=colors)+ggtitle('phylogeny')+geom_treescale()
+
+
+multiplot(tr1,tr2,cols=2)
+
+tr1 = open_tree(tr1, angle=180)
+tr2 = open_tree(tr2, angle=180)
+multiplot(tr1,tr2,cols=2)
+
+tr1 = ggtree(midpoint.root(as.phylo(Mapptree $Htree)),layout='circular') %<+% ANVIO_cat2 + geom_point(aes(color = group2,shape=quality,size=2)) + scale_colour_manual(values=colors)+ geom_text2(aes(label=label, subset=!isTip), hjust=1.2,vjust=-.5,size=2)+ggtitle('protein clusters')+geom_treescale()
+tr1 = open_tree(tr1, angle=180)
 
 
 ANVIOmarkers = subset(ANVIO, protein_cluster_id  %in% all.sig)
