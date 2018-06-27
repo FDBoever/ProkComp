@@ -3,10 +3,20 @@
 # https://doi.org/10.1111/1755-0998.12773
 # Brieuc et al., 2018 - A practical introduction to random forest for genetic association studies in ecology and evolution 
 
+#
+
+
 
 # R randomForest (Liaw and Wiener 2002)
-install.packages("randomForest")
+install.packages(c("randomForest"))
+
 library(randomForest)
+
+geneCount <- read.csv("~/matrix_scoary_abundance.tsv",row.names=1) 
+grouping_factors <- read.csv("~/traits_scoary.tsv",row.names=1) 
+
+~/matrix_scoary_abundance.tsv
+
 
 # Import the example data set, which comprises 402 individuals genotyped at 1000 biallelic loci, where 0=homozygote 1, 1=heterozygote, 2=homozygote 2
 # Each individual also has a binary phenotype - resistance to a disease - where 0=did not survive and 1=survived
@@ -17,11 +27,16 @@ class_data <- read.csv("data_classification_RF_tutorial.csv",row.names=1) #This 
 #prepare the dataset suitable for randomForest()
 RFdf = data.frame(t(geneCount),'group'=as.character(grouping_factors$group2))
 
-RF <- randomForest(group ~ ., data= RFdf)
+RF <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
+RF.1 <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
+RF.2 <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
+
 #RF <- randomForest(group ~ ., data= RFdf, importance=T, proximity=T,ntree=1500,keep.forest=F)
 
 
-
+importance_rf_original<-data.frame(importance(RF,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+importance_rf_original.1<-data.frame(importance(RF.1,type=1))
+importance_rf_original.2<-data.frame(importance(RF.2,type=1))
 
 
 # First, explore the overall distribution of the phenotype
@@ -98,7 +113,7 @@ RF <- randomForest(group ~ ., data= RFdf)
 mtry = c(200,100,50,25,10,5,2,1)
 
 results_optimization <- matrix(data=NA , nrow = 0, ncol = 3)
-for (i in seq(from = 100, to = 1000 , by = 100)){  # values of ntree
+for (i in c(seq(from = 1, to = 20 , by = 1),seq(from = 20, to = 100 , by = 2),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 5000 , by = 1000),seq(from = 5000, to = 25000 , by = 5000))){  # values of ntree
   print(paste('ntree:',i))
   for (j in mtry){    #values of mtry based on 1000 total loci
   	print(paste('ntree:',i,'mtry: p/',j,'=',round(length(colnames(t(geneCount)))/j)))
@@ -167,14 +182,17 @@ rf_all_2_err.rate <- rf_all_2$err.rate[25000]
 rf_all_3_err.rate <- rf_all_3$err.rate[25000]
 
 #Combine importance (mean decrease in accuracy) values of each locus across the three forests
-importance_rf_all <-cbind(rownames(importance_rf_all_1),importance_rf_all_1,importance_rf_all_2, importance_rf_all_3)
-colnames(importance_rf_all)<-c("Variable","Importance1","Importance2", "Importance3")
+importance_rf_all <-cbind(rownames(importance_rf_all_1),importance_rf_all_1,importance_rf_all_2, importance_rf_all_3, importance_rf_original, importance_rf_original.1, importance_rf_original.2)
+colnames(importance_rf_all)<-c("Variable","Importance1","Importance2", "Importance3","Importance1O", 'Importance1O.1',' Importance1O.2')
 
 # Export importance values for future reference
 write.csv(importance_rf_all,file="rf_importance_values_all_loci_classification_tutorial.csv",row.names=FALSE)
 
 plot(importance_rf_all$Importance1, importance_rf_all$Importance2)
 plot(importance_rf_all)
+
+ggplot(importance_rf_all,aes(Importance1, Importance2))+geom_point()+geom_smooth(method='lm')
+ggplot(importance_rf_all,aes(Importance1, Importance3))+geom_point()+geom_smooth(method='lm')
 
 
 ############################################################################################################################################
@@ -400,8 +418,12 @@ plot(All_initial_err.rate$Number_loci,All_initial_err.rate$Average,log="x", pch=
 
 # Based on this table and plot, the best 5% of loci have the lowest error rate
 # As a conservative measure, I'll run backward purging RF with the best 10% loci
+ggplot(All_initial_err.rate,aes(Number_loci, Average))+geom_point()
+minitial = melt(All_initial_err.rate,id=c('Average','Number_loci'))
 
-#################### Backward purging approach
+q = ggplot(minitial,aes(Number_loci, Average))+geom_point()+xlab("Number of Loci")+ ylab("OOB Error Rate")
+
+)#################### Backward purging approach
 names_purging <- names_best_10perc_unique
 
 genotypes_purging<-t(geneCount)[,colnames(t(geneCount)) %in% names_purging]
@@ -460,3 +482,9 @@ which(error_rate_best$Average==min(error_rate_best$Average[-c(1)])) #34 loci hav
 
 # Export the names of the predictor loci
 write.csv(names_all_iterations[[34]],file="Predictor_loci_classification_tutorial.csv")
+
+error_rate_best$Number_loci = seq(1,nrow(error_rate_best),1)
+q2 = ggplot(error_rate_best,aes(Number_loci, Average))+geom_point()+xlab("Number of Loci")+ ylab("OOB Error Rate")
+q2
+multiplot(q,q2)
+
