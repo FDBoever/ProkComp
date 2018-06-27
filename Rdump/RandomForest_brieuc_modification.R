@@ -186,8 +186,8 @@ for (i in ntree.seq){  # values of ntree
 rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
 rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
 
-importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
-importanceGini_rf_all_1<-data.frame(importance(rf_all_1,type=2)) #type=2 is mean decrease in Gini for classification, 
+	importance_rf_all_1<-data.frame(importance(rf_all_1,type=1))
+	importanceGini_rf_all_1<-data.frame(importance(rf_all_1,type=2))
 	colnames(importance_rf_all_1)<-c("MeanDecreaseAccuracy")
 	colnames(importanceGini_rf_all_1)<-c("MeanDecreaseGini")
 
