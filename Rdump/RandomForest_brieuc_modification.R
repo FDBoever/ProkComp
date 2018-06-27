@@ -173,18 +173,24 @@ colnames(importance_rf_all_2)<-c("importance")
 cor(importance_rf_all_1,importance_rf_all_2) # A correlation of 0.98 for locus importance values between forests is extremely good, so we'll use 25,000 trees for the remaining forests
 
 
-store.cor = matrix(data=NA , nrow = 0, ncol = 2)
-ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500))
+store.cor = matrix(data=NA , nrow = 0, ncol = 3)
+ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5) )#,,seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500),seq(from = 12000, to = 30000 , by = 2000))
+
+p = length(colnames(t(geneCount)))
+mtry = c(round(sqrt(p)),round(2*sqrt(p)),round(0.1*p),round(0.2*p), round(p/3),p)
+clrs = colorRampPalette(c("blue4",'cyan4','cyan4' ,"cadetblue1",'darkgoldenrod1'))(n = length(mtry))
+
 MeanDecreaseAccuracy = rownames(importance_rf_all_1)
 MeanDecreaseGini = rownames(importance_rf_all_1)
 
 
-#ntree.seq = c(seq(from = 12000, to = 30000 , by = 2000))
+#ntree.seq = c()
 
 for (i in ntree.seq){  # values of ntree
+	for (j in mtry){    #values of mtry based on 1000 total loci
   	print(paste('ntree:',i,'mtry: p/',j,'=',round(length(colnames(t(geneCount)))/j)))
-rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
-rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=j, ntree=i, strata=grouping_factors$group2)
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=j, ntree=i, strata=grouping_factors$group2)
 
 	importance_rf_all_1<-data.frame(importance(rf_all_1,type=1))
 	importanceGini_rf_all_1<-data.frame(importance(rf_all_1,type=2))
@@ -194,18 +200,20 @@ rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importanc
 	importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
 	colnames(importance_rf_all_2)<-c("MeanDecreaseAccuracy")
     
-    store.cor=rbind(store.cor,c(cor(importance_rf_all_1,importance_rf_all_2),i)) 
+    store.cor=rbind(store.cor,c(cor(importance_rf_all_1,importance_rf_all_2),i,j)) 
     MeanDecreaseGini = cbind(MeanDecreaseGini, importanceGini_rf_all_1)
     MeanDecreaseAccuracy  = cbind(MeanDecreaseAccuracy, importance_rf_all_1)
-
+	}
 }
 
 plot(store.cor)
 
-colnames(store.cor) = c('cor','ntree')
+colnames(store.cor) = c('cor','ntree','mtry')
 store.cor = data.frame(store.cor)
 ggplot(store.cor,aes(ntree,cor))+geom_line() + geom_point() 
+ggplot(store.cor,aes(ntree,cor)) + geom_point() 
 
+ggplot(store.cor,aes(ntree,cor,colour=as.factor(mtry)))+geom_line() + geom_point() +scale_colour_manual(values= clrs)
 
 
 
