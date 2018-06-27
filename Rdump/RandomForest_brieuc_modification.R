@@ -128,16 +128,19 @@ results_optimization<-as.data.frame(results_optimization)
 colnames(results_optimization)<-c("ntree", "mtry","OOB_ER")
 
 # Now plot results to see if there's a plateau
-
-plot(results_optimization$ntree[results_optimization$mtry == results_optimization$mtry[1]],results_optimization$OOB_ER[results_optimization$mtry == results_optimization$mtry[1]], type="l", col="black", xlab="ntree",ylab="OOB-ER",ylim=c(0,1))
-
 clrs = colorRampPalette(c("blue4",'cyan4','cyan4' ,"cadetblue1",'darkgoldenrod1'))(n = length(mtry))
+p.f = ggplot(results_optimization,aes(ntree,OOB_ER,colour=as.factor(mtry)))+geom_line()+scale_colour_manual(values= clrs)
 
-i=0
- for (j in unique(results_optimization$mtry)){    #values of mtry based on 1000 total loci
- 	i=i+1
- 	lines(results_optimization$ntree[results_optimization$mtry == j],results_optimization$OOB_ER[results_optimization$mtry == j], col= clrs[i])
-}
+# NARROW IT DOWN
+results_optimization2 = results_optimization[results_optimization$ntree <2000,]
+p.f1 = ggplot(results_optimization2,aes(ntree,OOB_ER,colour=as.factor(mtry)))+geom_line()+scale_colour_manual(values= clrs)
+
+# NARROW IT DOWN
+results_optimization3 = results_optimization[results_optimization$ntree <200,]
+p.f2 = ggplot(results_optimization3,aes(ntree,OOB_ER,colour=as.factor(mtry)))+geom_line()+scale_colour_manual(values= clrs)
+
+multiplot(p.f,p.f1,p.f2)
+
 
 
 # This plot shows that mtry=p is the best in terms of OOB-ER (although mtry=0.2p and p/3 are very similar), and that the OOB-ER has reached a plateau. 
@@ -152,11 +155,14 @@ i=0
 # As a starting point, we will grow 25,000 trees and increase if necessary. We do not need to worry about this increase in ntree affecting our mtry optimization,
 # since the OOB-ER reached a plateau for a given mtry value after about 400 trees.
 
-rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=60, strata=grouping_factors$group2)#, sampsize=sample_size)
 #save(rf_all_1,file="rf_all_1.Rdata")
 
-rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=60, strata=grouping_factors$group2)#, sampsize=sample_size)
 #save(rf_all_2,file="rf_all_2.Rdata")
+
+
+
 
 #Check correlation of locus importance values between forests 
 importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
@@ -165,6 +171,45 @@ importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
 colnames(importance_rf_all_2)<-c("importance")
 
 cor(importance_rf_all_1,importance_rf_all_2) # A correlation of 0.98 for locus importance values between forests is extremely good, so we'll use 25,000 trees for the remaining forests
+
+
+store.cor = matrix(data=NA , nrow = 0, ncol = 2)
+ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500))
+MeanDecreaseAccuracy = rownames(importance_rf_all_1)
+MeanDecreaseGini = rownames(importance_rf_all_1)
+
+
+#ntree.seq = c(seq(from = 12000, to = 30000 , by = 2000))
+
+for (i in ntree.seq){  # values of ntree
+  	print(paste('ntree:',i,'mtry: p/',j,'=',round(length(colnames(t(geneCount)))/j)))
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=i, strata=grouping_factors$group2)
+
+importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+importanceGini_rf_all_1<-data.frame(importance(rf_all_1,type=2)) #type=2 is mean decrease in Gini for classification, 
+	colnames(importance_rf_all_1)<-c("MeanDecreaseAccuracy")
+	colnames(importanceGini_rf_all_1)<-c("MeanDecreaseGini")
+
+	importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
+	colnames(importance_rf_all_2)<-c("MeanDecreaseAccuracy")
+    
+    store.cor=rbind(store.cor,c(cor(importance_rf_all_1,importance_rf_all_2),i)) 
+    MeanDecreaseGini = cbind(MeanDecreaseGini, importanceGini_rf_all_1)
+    MeanDecreaseAccuracy  = cbind(MeanDecreaseAccuracy, importance_rf_all_1)
+
+}
+
+plot(store.cor)
+
+colnames(store.cor) = c('cor','ntree')
+store.cor = data.frame(store.cor)
+ggplot(store.cor,aes(ntree,cor))+geom_line() + geom_point() 
+
+
+
+
+
 
 rf_all_3 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
 #save(rf_all_3,file="rf_all_3.Rdata")
