@@ -3,26 +3,12 @@
 # https://doi.org/10.1111/1755-0998.12773
 # Brieuc et al., 2018 - A practical introduction to random forest for genetic association studies in ecology and evolution 
 
-#
-
-
 
 # R randomForest (Liaw and Wiener 2002)
 install.packages(c("randomForest"))
 
 library(randomForest)
 
-geneCount <- read.csv("~/matrix_scoary_abundance.tsv",row.names=1) 
-grouping_factors <- read.csv("~/traits_scoary.tsv",row.names=1) 
-
-~/matrix_scoary_abundance.tsv
-
-
-# Import the example data set, which comprises 402 individuals genotyped at 1000 biallelic loci, where 0=homozygote 1, 1=heterozygote, 2=homozygote 2
-# Each individual also has a binary phenotype - resistance to a disease - where 0=did not survive and 1=survived
-# The objective is to identify loci associated with disease resistance 
-
-class_data <- read.csv("data_classification_RF_tutorial.csv",row.names=1) #This is the simulated data from Table S8
 
 #prepare the dataset suitable for randomForest()
 RFdf = data.frame(t(geneCount),'group'=as.character(grouping_factors$group2))
@@ -38,67 +24,11 @@ importance_rf_original<-data.frame(importance(RF,type=1)) #type=1 is mean decrea
 importance_rf_original.1<-data.frame(importance(RF.1,type=1))
 importance_rf_original.2<-data.frame(importance(RF.2,type=1))
 
-
-# First, explore the overall distribution of the phenotype
-hist(class_data$resistance)   
-
-# Now examine distributions within the two populations
-hist(class_data[which(class_data$Pop==1),2])
-length(which(class_data$Pop==1 & class_data$resistance==0)) # 131 susceptible individuals in Pop 1
-length(which(class_data$Pop==1 & class_data$resistance==1)) # 70 resistant individuals in Pop 1
-
-hist(class_data[which(class_data$Pop==2),2])
-length(which(class_data$Pop==2 & class_data$resistance==0)) # 68 susceptible individuals in Pop 2
-length(which(class_data$Pop==2 & class_data$resistance==1)) # 133 resistant individuals in Pop 2
-
-# Susceptibility/resistance to a disease appears to differ between the populations, and we should correct
-# for this stratification before conducting RF to minimize the risk of false positive associations.
-# Specifically, we will correct the genotypes using the approach of Zhao et al.(2012). 
-# We will not correct the phenotype, as it is binary and we want to maintain its categorical distribution.
-
-class_data_corrected <- class_data # create another data frame for the corrected genotypes
-class_data_corrected[,3:1002] <- NA  # Keep columns 1-2 with population ID and phenotype, but then replace with NA's over which you can write the residuals.
-
-# Now correct the genotypes using the regression/residual method. We're using a standard linear regression because Zhao et al. 2012 found that the correction procedure is robust to selection of the link function
-for (i in 3:ncol(class_data)){
-  LM_SNP_i <- lm(class_data[,i] ~ factor(class_data$Pop)) # apply linear model to all loci and the response
-  class_data_corrected[,i] <- LM_SNP_i$residuals
-  colnames(class_data_corrected)[i]<-colnames(class_data)[i] 
-  if(i%%50==0) print(i)
-}
-
-# Verify that the residuals have been written to the data frame properly, using the last column as an example
-class_data_corrected[,1002]-LM_SNP_i$residuals  #Should all be zero if correct
-
-# Export a copy of the corrected data for future reference (This corresponds to the data in Table S9)
-write.csv(class_data_corrected,file="data_classification_RF_tutorial_corrected.csv",row.names=FALSE)
-
-# Before running Random Forest, let's also check for an imbalance in the response variable 
-# because - as discussed in the manuscript - any imbalances can bias the results.
-length(which(class_data$resistance==0)) # 199 susceptible individuals total
-length(which(class_data$resistance==1)) # 203 resistant individuals total
-
-# So the phenotypes are evenly distributed. However, if they were imbalanced, we would correct for the imbalance by balancing the representation of
-# susceptible and resistant individuals within the training data. To do this, we would over-sample the underrepresented class
-# and under-sample the overrepresented class. This would be performed by setting the sampsize parameter to 2/3
-# of the class with the lower sample size and using those sample sizes in conjunction with the strata option 
-
-# We will demonstrate how to do this even though the phenotypes are evenly distributed. 
-
-# There are 199 susceptible individuals. 199*(2/3) = 133 individuals, so we will sample 133 susceptible
-# individuals and 133 resistant individuals for the training data set, from which the trees are grown.
-sample_size <- c(133,133)
-
-# We will use these sample sizes in conjunction with the strata option (see below)
-
-###########################################################################################################################################
 ###########################################################################################################################################
 
 # Now run Random Forest analysis. Since this is a binary trait, we need to conduct a classification RF
 
 # First, we need to optimize mtry by running different values of mtry at different values of ntree. 
-
-# We will run mtry values of sqrt(p), 2*sqrt(p), 0.1(p), 0.2(p), p/3, and p, where p is the number of loci
 # We will initially run each of these mtry values at ntree=100 to 1000 (by increments of 100). 
 # We are looking for a plateau where the out-of-bag error rate (OOB-ER) stops decreasing with larger values of ntree
 # Once we reach the plateau, we will choose the mtry value that minimizes the OOB-ER.
@@ -110,15 +40,16 @@ RF <- randomForest(group ~ ., data= RFdf)
 #### ----- optimisation of mtry
 
 #values stored here will be used to divide p (p, is nr of PC's) eg. mtry will be set to p/200, p/100, p/50, p/25, p/10, p/2, p/1
-mtry = c(200,100,50,25,10,5,2,1)
+p = length(colnames(t(geneCount)))
+mtry = c(round(sqrt(p)),round(2*sqrt(p)),round(0.1*p),round(0.2*p), round(p/3),p)
 
 results_optimization <- matrix(data=NA , nrow = 0, ncol = 3)
 for (i in c(seq(from = 1, to = 20 , by = 1),seq(from = 20, to = 100 , by = 2),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 5000 , by = 1000),seq(from = 5000, to = 25000 , by = 5000))){  # values of ntree
   print(paste('ntree:',i))
   for (j in mtry){    #values of mtry based on 1000 total loci
   	print(paste('ntree:',i,'mtry: p/',j,'=',round(length(colnames(t(geneCount)))/j)))
-    rf_ij <- randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, ntree=i, mtry=round(length(colnames(t(geneCount)))/j), strata= grouping_factors$group2)#, sampsize=sample_size)
-    results_optimization <- rbind(results_optimization, c(i,round(length(colnames(t(geneCount)))/j),tail(rf_ij$err.rate,1)[1]))
+    rf_ij <- randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, ntree=i, mtry=j, strata= grouping_factors$group2)#, sampsize=sample_size)
+    results_optimization <- rbind(results_optimization, c(i,j))
   }
 }
 
@@ -174,7 +105,7 @@ cor(importance_rf_all_1,importance_rf_all_2) # A correlation of 0.98 for locus i
 
 
 store.cor = matrix(data=NA , nrow = 0, ncol = 3)
-ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5) )#,,seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500),seq(from = 12000, to = 30000 , by = 2000))
+ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500),seq(from = 12000, to = 30000 , by = 2000))
 
 p = length(colnames(t(geneCount)))
 mtry = c(round(sqrt(p)),round(2*sqrt(p)),round(0.1*p),round(0.2*p), round(p/3),p)
@@ -182,6 +113,7 @@ clrs = colorRampPalette(c("blue4",'cyan4','cyan4' ,"cadetblue1",'darkgoldenrod1'
 
 MeanDecreaseAccuracy = rownames(importance_rf_all_1)
 MeanDecreaseGini = rownames(importance_rf_all_1)
+results_optimization <- matrix(data=NA , nrow = 0, ncol = 3)
 
 
 #ntree.seq = c()
@@ -196,13 +128,12 @@ rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importanc
 	importanceGini_rf_all_1<-data.frame(importance(rf_all_1,type=2))
 	colnames(importance_rf_all_1)<-c("MeanDecreaseAccuracy")
 	colnames(importanceGini_rf_all_1)<-c("MeanDecreaseGini")
-
 	importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
 	colnames(importance_rf_all_2)<-c("MeanDecreaseAccuracy")
-    
     store.cor=rbind(store.cor,c(cor(importance_rf_all_1,importance_rf_all_2),i,j)) 
     MeanDecreaseGini = cbind(MeanDecreaseGini, importanceGini_rf_all_1)
     MeanDecreaseAccuracy  = cbind(MeanDecreaseAccuracy, importance_rf_all_1)
+	results_optimization <- rbind(results_optimization, c(i,j,tail(importance_rf_all_1$err.rate,1)[1]))
 	}
 }
 
@@ -214,6 +145,67 @@ ggplot(store.cor,aes(ntree,cor))+geom_line() + geom_point()
 ggplot(store.cor,aes(ntree,cor)) + geom_point() 
 
 ggplot(store.cor,aes(ntree,cor,colour=as.factor(mtry)))+geom_line() + geom_point() +scale_colour_manual(values= clrs)
+
+results_optimization<-as.data.frame(results_optimization)
+colnames(results_optimization)<-c("ntree", "mtry","OOB_ER")
+
+# Now plot results to see if there's a plateau
+clrs = colorRampPalette(c("blue4",'cyan4','cyan4' ,"cadetblue1",'darkgoldenrod1'))(n = length(mtry))
+p.f = ggplot(results_optimization,aes(ntree,OOB_ER,colour=as.factor(mtry)))+geom_line()+scale_colour_manual(values= clrs)
+
+colnames(MeanDecreaseGini) = c('1000_60',paste(store.cor$ntree, store.cor$mtry,sep='_'))
+colnames(MeanDecreaseAccuracy)=c('1000_60',paste(store.cor$ntree, store.cor$mtry,sep='_'))
+
+
+plot(MeanDecreaseGini$'30000_5144', MeanDecreaseGini$'28000_5144')
+plot(MeanDecreaseGini$'30000_5144', MeanDecreaseAccuracy$'30000_514')
+
+
+# Identifying Important Features
+# -----------------------------------
+# Mean decrease in Gini
+MeanDecreaseGini_imp <- as.data.frame( MeanDecreaseGini $'30000_5144')
+MeanDecreaseGini_imp $features <- rownames(MeanDecreaseGini)
+colnames(MeanDecreaseGini_imp) = c('MeanDecreaseGini','features')
+MeanDecreaseGini_imp =  MeanDecreaseGini_imp[order(-MeanDecreaseGini_imp $MeanDecreaseGini),]
+
+#ggplot(data = MeanDecreaseGini_imp, aes(x= reorder(features, MeanDecreaseGini) , y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")
+
+ggplot(data = MeanDecreaseGini_imp[1:20,], aes(x= reorder(features, -MeanDecreaseGini), y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous(expand = c(0, 0))
+
+
+
+
+# Identifying Important Features
+# -----------------------------------
+# Mean decrease in Accuracy
+
+
+MeanDecreaseAccuracy_imp <- as.data.frame( MeanDecreaseAccuracy$'30000_5144')
+MeanDecreaseAccuracy_imp $features <- rownames(MeanDecreaseAccuracy)
+colnames(MeanDecreaseAccuracy_imp) = c('MeanDecreaseAccuracy','features')
+MeanDecreaseAccuracy_imp =  MeanDecreaseAccuracy_imp[order(-MeanDecreaseAccuracy_imp $MeanDecreaseAccuracy),]
+
+#ggplot(data = MeanDecreaseAccuracy_imp, aes(x= reorder(features, MeanDecreaseAccuracy) , y= MeanDecreaseAccuracy)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Accuracy (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")
+
+ggplot(data = MeanDecreaseAccuracy_imp[1:20,], aes(x= reorder(features, -MeanDecreaseAccuracy), y= MeanDecreaseAccuracy)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Accuracy (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous(expand = c(0, 0))
+
+plot(MeanDecreaseAccuracy_imp$MeanDecreaseAccuracy, MeanDecreaseGini_imp $MeanDecreaseGini)
+
+
+
+
+RF_state_classify_imp_sorted <- arrange( RF_state_classify_imp  , desc(MeanDecreaseAccuracy$'30000_5144')  )
+barplot(RF_state_classify_imp_sorted$MeanDecreaseAccuracy, ylab="Mean Decrease in Accuracy (Variable Importance)", main="RF Classification Variable Importance Distribution")
+
+RF_IS_regress_imp <- as.data.frame( RF_IS_regress$importance )
+RF_IS_regress_imp$features <- rownames( RF_IS_regress_imp )
+RF_IS_regress_imp_sorted <- arrange( RF_IS_regress_imp  , desc(`%IncMSE`)  )
+barplot(RF_IS_regress_imp_sorted$`%IncMSE`, ylab="% Increase in Mean Squared Error (Variable Importance)", main="RF Regression Variable Importance Distribution")
+
+
+
+
 
 
 
