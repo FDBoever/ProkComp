@@ -665,6 +665,96 @@ ggscatter(comparePhylo, x = "RAxMLANVIORooted", y = "RAxMLRinkeRooted", add = "l
 
 
 #--------------------------------------------------------------------------------------------
+#	ANNOTATED TREE
+#---------------------------------------------------------------------------------------------
+library(ggstance)
+
+CheckM3_annotated = CheckM2_annotated
+rownames(CheckM3_annotated) = CheckM3_annotated$Bin_Id
+CheckM3_annotated  = CheckM3_annotated[tree2$tip.label,]
+p <- ggtree(tree2,branch.length='none') %<+% CheckM3_annotated + geom_tippoint(aes(color=group2))
+
+facet_plot(p, panel="SNP", geom=geom_point, mapping=aes(x= gc_content),data= CheckM3_annotated, pch='|', color="firebrick")  + theme_tree2()# %>%
+    #facet_plot("BAR", CheckM2_annotated, geom_segment, aes(x=0, xend=dummy_bar_value, y=y, yend=y)) + theme_tree2()
+
+
+p <- ggtree(tree2)
+
+
+p <- ggtree(tree2,branch.length='none')
+p1 <- p %<+% CheckM3_annotated[,c(1:10)] + geom_tippoint(aes(color=group2))+scale_colour_manual(values=colors)
+
+p2 <- facet_plot(p1, panel="Genome_size", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= Genome_size), color='firebrick',stat='identity') + theme_tree2()                
+d = data.frame(y=1:57,panel='Genome_size')
+p2 = p2 + geom_hline(data=d,aes(yintercept=y))
+
+p3  = facet_plot(p2, panel="predicted_genes", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= predicted_genes), color='firebrick',stat='identity') + theme_tree2()  
+d = data.frame(y=1:57,panel='predicted_genes')
+p3 = p3 + geom_hline(data=d,aes(yintercept=y))
+
+p4  = facet_plot(p3, panel="GCcontent", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= GC), color='firebrick',stat='identity') + theme_tree2()  
+d = data.frame(y=1:57,panel='GCcontent')
+p4 = p4 + geom_hline(data=d,aes(yintercept=y))
+
+p5  = facet_plot(p4, panel="Coding_density", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= Coding_density), color='firebrick',stat='identity') + theme_tree2()  
+d = data.frame(y=1:57,panel='Coding_density')
+p5 = p5 + geom_hline(data=d,aes(yintercept=y))
+
+p6  = facet_plot(p5, panel="Contamination", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= Contamination), color='firebrick',stat='identity') + theme_tree2()  
+d = data.frame(y=1:57,panel='Contamination')
+p6 = p6 + geom_hline(data=d,aes(yintercept=y))
+
+p7  = facet_plot(p6, panel="Completeness", data= CheckM3_annotated, geom= geom_point, 
+                aes(x= Completeness), color='firebrick',stat='identity') + theme_tree2()  
+d = data.frame(y=1:57,panel='Completeness')
+p7 = p7 + geom_hline(data=d,aes(yintercept=y))
+
+p7 + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+#--------------------------------------------------------------------------------------------
+#	PHYLOGENETIC SIGNAL FOR CONTINIOUS TRAITS
+#---------------------------------------------------------------------------------------------
+# # Use the phylosignal function of the picante package to test for phylogenetic signal, measured with the K statistic.
+# K ~ 1.0 suggests Brownian motion, K < 1 indicates less resemblance among relatives than expected under Brownian motion,
+# and K > 1 indicates more resemblance among relatives than expected under Brownian motion (Blomberg et al., 2003, Evolution, 57:717-745).
+
+library(pGLS)
+library(geiger)
+library(caper)
+library(picante)
+library(surface)
+library(igraph)
+library(phytools)
+library(bayou)
+library(OUwie)
+
+tree=tree2
+traits=CheckM3_annotated[,'GC']
+names(traits)=CheckM3_annotated[,'Bin_Id']
+
+#--------------Pagel's Lambda
+#Basically, "λ is the transformation of the phylogeny that ensures the best fit of trait data to a Brownian Motion model".
+#When λ equals 1, the structure of the phylogeny alone can explain changes in traits (explain covariance matrix of traits). In this scenario, traits follow a pure brownian motion model of evolution. On the other hand, when λ equals 0, the phylogeny has to become a 'star phylogeny' (i.e. to lose all its structure) to be able to explain trait evolution under a brownian motion model. Therefore, the phylogeny alone is not able to explain trait evolution. Also, λ can be greater than 1, what would suggest that the rate of evolution of a trait is higher at the root than it is at the tips.
+
+#--------------Blomberg's K
+#Blomberg's K is a relatively recent measure of phylogenetic signal. It is defined as the ratio between two other ratios. The first (observed) is the Mean Squared Error of tip data divided by the Mean Squared Error of data calculated using variance-covariance matrix derived from the phylogeny. The second ratio (expected) is the same thing, but using data from a model under the assumption of brownian motion of trait evolution. Thus, K<1 indicates that closely related species resemble each other less than expected under the Brownian motion model of trait evolution. K>1 means that closely related species are more similar than predicted by the model. In other words, greater values of K suggest strongest effects of phylogenetic signal.
+
+PhSigResCont = c()
+for(param in c('Genome_size','predicted_genes', 'GC', 'Coding_density', 'Contamination', 'Completeness'))
+{
+	traits=CheckM3_annotated[,param]
+	names(traits)=CheckM3_annotated[,'Bin_Id']
+	
+	PhSigResCont = rbind(PhSigResCont , c(param,phylosig(tree, traits, method="lambda", test=TRUE, nsim=999),phylosig(tree,  traits, method="K", test=TRUE, nsim=999)))	
+}
+
+
+#--------------------------------------------------------------------------------------------
 #	FUNCTIONAL DATA
 #---------------------------------------------------------------------------------------------
 library(phyloseq)
