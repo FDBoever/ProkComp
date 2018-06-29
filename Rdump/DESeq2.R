@@ -17,10 +17,30 @@ library(dplyr)
 library(ggplot2)
 #library(DESeq2)
 
+##############################################
+#	COG CATEGORY LIST
+##############################################
+
+COG_meaning = data.frame(rbind(c('A','RNA processing and modification'),c('B','Chromatin Structure and dynamics'),c('C','Energy production and conversion'),c('D','Cell cycle control and mitosis'),c('E','Amino Acid metabolis and transport'),c('F','Nucleotide metabolism and transport'),c('G','Carbohydrate metabolism and transport'),c('H','Coenzyme metabolis'),c('I','Lipid metabolism'),c('J','Tranlsation'),c('K','Transcription'),c('L','Replication and repair'),c('M','Cell wall/membrane/envelop biogenesis'),c('N','Cell motility'),c('O','Post-translational modification, protein turnover, chaperone functions'),c('P','Inorganic ion transport and metabolism'),c('Q','Secondary Structure'),c('T','Signal Transduction'),c('U','Intracellular trafficing and secretion'),c('Y','Nuclear structure'),c('Z','Cytoskeleton'),c('R','General Functional Prediction only'),c('S','Function Unknown'),c('V','Defence Mechanisms'),c('W','Extracellular structures'),c('Y','Nuclear structure'),c('X','Mobilome: prophages, transposons')))
+names(COG_meaning)=c("Var1","long")
+
+##############################################
+
 
 #Load in the pan-matrix (could be any nxp matrix) derived from ProkComp
 panmatrix = AnvioData
 meta_data =  CheckMANVIO2
+read.table()
+
+#write.table(panmatrix,"panmatrix.txt",row.names=T,col.names=T,quote=F)
+#write.table(meta_data,"meta_data.txt",row.names=T,col.names=T,quote=F)
+#write.table(ANVIO_cat2,"ANVIO_cat2.txt",row.names=T,col.names=T,quote=T)
+
+panmatrix = read.table("panmatrix.txt")
+meta_data = read.table("meta_data.txt")
+ANVIO_cat2  = read.table("ANVIO_cat2.txt")
+
+
 
 #trim out the unwanted (low-quality) genomes
 rownames(meta_data)=meta_data$Bin_Id
@@ -43,9 +63,7 @@ geneCountPA[geneCountPA>1]=1
 #	INITIAL FILTERING STEP
 #	All downstream analysis are preferably run on non-core, and non-singleton genes
 #	For this purpose we select only the accessory genes to dig for patterns, and increase the statistical power
-#
 ######################################################################################
-
 
 CoreGenes = geneCountPA[rowSums(geneCountPA)== length(colnames(geneCountPA)), ]
 none_CoreGenes = geneCountPA[!rowSums(geneCountPA)== length(colnames(geneCountPA)), ]
@@ -53,8 +71,6 @@ none_core_none_signleton = none_CoreGenes[!rowSums(none_CoreGenes)==1, ]
 
 #geneCount only containing non-core and non-singleton genes
 geneCount = geneCount[rownames(none_core_none_signleton),]
-
-
 
 ######################################################################################
 #
@@ -188,6 +204,35 @@ p<-p+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+theme(strip.tex
 p + scale_color_manual(values=c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70","#E38FDD","#898989","#76AECF","#B34D22"))
 
 
+#----------------------------------------------------------------------------------
+#Now we plot taxa significantly different between the categories
+#----------------------------------------------------------------------------------
+sDF4 = DF4[DF4$genes %in% Kruskal.sig.0.05,]
+Kruskal.sig.0.05
+
+COG_list = c("C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X" )
+	sum=0
+	mat = colSums(t(table(droplevels(sDF4[grep('', sDF4$COG_CATEGORY),c('COG_CATEGORY_ACC','COG_FUNCTION')]))))
+
+	CpcogFull = data.frame(sum(mat))
+	for(i in COG_list){
+		mat = colSums(t(table(droplevels(sDF4[grep(i, sDF4$COG_CATEGORY),c('COG_CATEGORY_ACC','COG_FUNCTION')]))))
+		CpcogFull = cbind(CpcogFull, sum(mat))
+	}
+names(CpcogFull)= c('',COG_list)
+CpcogFull = t(CpcogFull)
+CpcogFull = cbind(CpcogFull,"COG"=c('',COG_list))
+colnames(CpcogFull)=c('count','COG')
+CpcogFull = data.frame(CpcogFull)
+CpcogFull$count = as.numeric(as.character(CpcogFull$count ))
+
+
+CpcogFull$COG2 = paste(CpcogFull$COG, COG_meaning[COG_meaning$Var1%in% CpcogFull$COG,'long'],sep=' - ')
+
+
+g <- ggplot(CpcogFull, aes(x=reorder(COG2,count),y=count))
+g + geom_bar(stat='identity')  + scale_y_continuous(expand = c(0, 0)) +xlab('COG category')+ coord_flip()
+
 
 
 ######################################################################################
@@ -206,46 +251,15 @@ p + scale_color_manual(values=c("#39811D","#86DA81","#A6D8D4","#F2A968","#F2EC70
 
 set.seed(42)
 
-
-
-
-
-
 #prepare the dataset suitable for randomForest()
 RFdf = data.frame(t(geneCount),'group'=as.character(grouping_factors$group2))
 
 RF <- randomForest(group ~ ., data= RFdf)
 #RF <- randomForest(group ~ ., data= RFdf, importance=T, proximity=T,ntree=1500,keep.forest=F)
 
+#TRAIN THE RF (look for code in RandomForest_Brieuc_modification.R)
 
-n_tree = seq(from=1, to=10000, by=100)
-oob = data.frame()
-
-# Loop over each value of mtry and store result in a data frame
-for (i in n_tree) {
-  rf1 <- randomForest(group ~ ., data= RFdf, ntree=i) 
-  result = data.frame(mtry=i, OOB=rf1[["err.rate"]][ ,"OOB"])
-  oob = rbind(oob, result)
-} 
-
-oob_ntree = oob
-
-
-
-mtry = c(100,50,25,10,5,2,1)
-oob = data.frame()
-
-# Loop over each value of mtry and store result in a data frame
-for (i in mtry) {
-
-  rf1 <- randomForest(group ~ ., data= RFdf, ntree= 10000, mtry=round(length(colnames(t(geneCount)))/i)) 
-
-  result = data.frame(mtry=i, OOB=rf1[["err.rate"]][ ,"OOB"])
-  oob = rbind(oob, result)
-} 
-
-
-
+RF <- randomForest(group ~ ., data= RFdf,importance=TRUE ,proximity=TRUE, ntree=30000, strata= group)
 
 
 
@@ -313,6 +327,8 @@ DF4$COG_FUNCTION = chartr("+" , "_", DF4$COG_FUNCTION)
 DF4$COG_FUNCTION = chartr("," , "_", DF4$COG_FUNCTION)
 DF4$COG_FUNCTION = chartr(" " , "_", DF4$COG_FUNCTION)
 
+write.table(DF4,"DF4.txt",row.names=T,col.names=T,quote=F)
+
 #Abundance_Table
 df_Tab<-cbind(DF4,as.data.frame.matrix(Tab))
 
@@ -339,12 +355,6 @@ write.tree(drop.tip(tree2, tree2 $tip.label[-match(colnames(geneCount), tree2 $t
 
 #scoary -t /Users/sa01fd/traits_scoary.tsv -g /Users/sa01fd/matrix_scoary_abundance.tsv -n /Users/sa01fd/DATA/MarinobacterGenomics/2018_ProkComp/trees/SCO_kde.fas.treefile  -e 1000 -p 1.0 --threads 8 -s 6 -o ./FINAL_scoary
 
-##############################################
-#	COG CATEGORY LIST
-##############################################
-
-COG_meaning = data.frame(rbind(c('A','RNA processing and modification'),c('B','Chromatin Structure and dynamics'),c('C','Energy production and conversion'),c('D','Cell cycle control and mitosis'),c('E','Amino Acid metabolis and transport'),c('F','Nucleotide metabolism and transport'),c('G','Carbohydrate metabolism and transport'),c('H','Coenzyme metabolis'),c('I','Lipid metabolism'),c('J','Tranlsation'),c('K','Transcription'),c('L','Replication and repair'),c('M','Cell wall/membrane/envelop biogenesis'),c('N','Cell motility'),c('O','Post-translational modification, protein turnover, chaperone functions'),c('P','Inorganic ion transport and metabolism'),c('Q','Secondary Structure'),c('T','Signal Transduction'),c('U','Intracellular trafficing and secretion'),c('Y','Nuclear structure'),c('Z','Cytoskeleton'),c('R','General Functional Prediction only'),c('S','Function Unknown'),c('V','Defence Mechanisms'),c('W','Extracellular structures'),c('Y','Nuclear structure'),c('X','Mobilome: prophages, transposons')))
-names(COG_meaning)=c("Var1","long")
 
 
 

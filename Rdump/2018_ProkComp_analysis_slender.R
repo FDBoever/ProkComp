@@ -547,9 +547,12 @@ multiplot(p1,p4,p2,p3,cols=4)
 
 tapply(CheckM2_annotated $Genome_size, CheckM2_annotated $group2, summary)
 
-bp1 = ggboxplot(CheckM2_annotated, x = "group2", y = "Genome_size", fill = "white",add.params = list(size = 0.75)) +theme(axis.text.x=element_text(angle=45,hjust=1))                
-bp2 = ggboxplot(CheckM2_annotated, x = "group2", y = "GC", fill = "white",add.params = list(size = 0.75)) +theme(axis.text.x=element_text(angle=45,hjust=1))                
-multiplot(bp1,bp2)            
+bp1 = ggboxplot(CheckM2_annotated, x = "group2", y = "Genome_size", fill = "white",add.params = list(size = 0.75)) + ylab('Genome size')+theme(axis.text.x=element_text(angle=45,hjust=1))                
+bp2 = ggboxplot(CheckM2_annotated, x = "group2", y = "predicted_genes", fill = "white",add.params = list(size = 0.75)) +ylab('Predicted genes')+theme(axis.text.x=element_text(angle=45,hjust=1))                
+bp3 = ggboxplot(CheckM2_annotated, x = "group2", y = "GC", fill = "white",add.params = list(size = 0.75)) + ylab('%GC')+theme(axis.text.x=element_text(angle=45,hjust=1))                
+bp4 = ggboxplot(CheckM2_annotated, x = "group2", y = "Coding_density", fill = "white",add.params = list(size = 0.75)) + ylab('Coding Density')+theme(axis.text.x=element_text(angle=45,hjust=1))                
+
+multiplot(bp1,bp2,bp3,bp4,cols=2)            
                 
                 
 
