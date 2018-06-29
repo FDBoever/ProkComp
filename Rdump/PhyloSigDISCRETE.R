@@ -43,7 +43,6 @@ trait_p_value_ER_vs_ARD <- pchisq(trait_d_ER_vs_ARD, 6-1, lower.tail=FALSE) # 0.
 #--------------------------------------------------
 
 #--------------------------------------------------
-
 # IF YOU ACCEPT the ER model 
 # phylogenetic signal test for trait trait, using Pagel's lambda
 # p < 0.05 -- Rejects no signal model, trait has phylogenetic signal
@@ -53,7 +52,6 @@ trait_d_our_tree_vs_lambda_0 <- abs(2*(trait_ER_lambda_0$opt$lnL-trait_ER_lambda
 trait_p_our_tree_vs_lambda_0 <- pchisq(trait_d_our_tree_vs_lambda_0, 1, lower.tail=FALSE) 
 
 #--------------------------------------------------
-
 # IF YOU ACCEPT the SYM model 
 # phylogenetic signal test for trait trait, using Pagel's lambda
 # p < 0.05 -- Rejects no signal model, trait has phylogenetic signal
