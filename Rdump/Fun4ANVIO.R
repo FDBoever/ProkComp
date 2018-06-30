@@ -87,14 +87,14 @@ PC2Tree= function(PCs,ANVIO,outdir){
 }
 
 GrepAnvioHEAT = function(toSearch){
-	testPan = FindPCinPAN(as.character(unique(FindFuncinANVIO(toSearch, ANVIO)[,'protein_cluster_id'])), AnvioData)
+	testPan = FindPCinPAN(as.character(unique(FindFuncinANVIO(paste(toSearch,collapse='|'), ANVIO)[,'protein_cluster_id'])), AnvioData)
 	testANVIO = FindPCinANVIO(rownames(testPan), ANVIO)
 	dedtestANVIO = testANVIO[,c('protein_cluster_id','COG_CATEGORY_ACC','COG_FUNCTION_ACC', 'COG_FUNCTION')]
 	dedtestANVIO  = dedtestANVIO[!duplicated(dedtestANVIO$protein_cluster_id), ]
 	rownames(dedtestANVIO)= dedtestANVIO$protein_cluster_id
 	dedtestANVIO = dedtestANVIO[rownames(testPan),]
 	rownames(testPan) = paste(dedtestANVIO$protein_cluster_id, dedtestANVIO$COG_FUNCTION_ACC, dedtestANVIO$COG_FUNCTION,sep=' - ')
-	print(heatmap.2(as.matrix((testPan)),trace='none',margins=c(20,20),cexRow=0.5,cexCol =0.5))	
+	print(heatmap.2(as.matrix((testPan)),trace='none',margins=c(20,20),cexRow=0.5,cexCol =0.5,col=colorRampPalette(c("white", "darkblue", "red",'green'))(n = 20)))	
 }
 
 
@@ -137,7 +137,11 @@ GrepAnvioHEAT('efflux pump')
 GrepAnvioHEAT('desaturase')
 GrepAnvioHEAT('mannitol')
 GrepAnvioHEAT('mannose')
-GrepAnvioHEAT('transpos')
+GrepAnvioHEAT('oxidored')
+GrepAnvioHEAT(c('precorrin','cobalamin','cobyrnic'))
+GrepAnvioHEAT('sulfate')
+GrepAnvioHEAT('copper')
+GrepAnvioHEAT('efflux system')
 
 
 
