@@ -98,8 +98,37 @@ GrepAnvioHEAT = function(toSearch){
 }
 
 
+
+FASTA2Tree= function(path){
+		sequences <- Biostrings::readAAStringSet(path,format='fasta')
+		print('load sequences done')
+
+		#align the sequences using CLUSTAL 2.1
+		aln <- msa(sequences)
+		aln <- msaConvert(aln, type="seqinr::alignment")
+		print('align sequences done')
+
+
+		# dirty but fast: distance matrix and NJ tree reconstruction, and assesment of monophyly of a genus (CHANGE MARINOBACTER); 
+		dist.aln <- dist.alignment(aln, "identity")
+		njTree <- njs(dist.aln )
+		njTree$edge.length = njTree$edge.length + 0.0000001
+
+		p <- ggtree(midpoint.root(njTree),ladderize=TRUE)+geom_treescale() + xlim(0,2)
+			p1 <- p + geom_tippoint()+ geom_tiplab(size=2)
+		print(p1)
+
+	#return(ANVIO[grepl(paste(PC,collapse='|'),ANVIO$protein_cluster_id),])
+}
+
+
+
 ####################################################################################
 
+
+#Visialise a NJ tree on the basis of an input fasta file
+FASTA2Tree('~/Genomics/alkB_all.fasta')
+FASTA2Tree('~/Genomics/alkB_all_2.fasta')
 
 
 
@@ -110,6 +139,7 @@ InputFasta = readAAStringSet('~/Genomics/Glycolate_fasta.fasta',format='fasta')
 InputFasta = readAAStringSet('~/Genomics/Glycolate_HP15_2.fasta',format='fasta')
 InputFasta = readAAStringSet('~/Genomics/full_glycolate.fasta',format='fasta')
 InputFasta = readAAStringSet('~/Genomics/TRAP_mannitol.fasta',format='fasta')
+InputFasta = readAAStringSet('~/Genomics/alkB_all.fasta',format='fasta')
 
 ~/Genomics/catechol_ortho.fasta
 ~/Genomics/catechol_meta.fasta
@@ -128,10 +158,11 @@ SeqOfInterest =  'MVQRISQAFLVMFVISVIAFAIQDGLGDPLQEMVGMSVSEEEREAIREELGLNDPMVVQYLR
 testPan = FindPCinPAN(testPC, AnvioData)
 testPan = FindPCinPAN(names(tail(sort(rowSums(AnvioData)),5)), AnvioData)
 
+
+#Grep the pangenome file for function(s) and visualise a heatmap
 GrepAnvioHEAT('lactate')
 GrepAnvioHEAT('flag')
 GrepAnvioHEAT('lactate')
-
 GrepAnvioHEAT('biotin')
 GrepAnvioHEAT('efflux pump')
 GrepAnvioHEAT('desaturase')
@@ -142,11 +173,10 @@ GrepAnvioHEAT(c('precorrin','cobalamin','cobyrnic'))
 GrepAnvioHEAT('sulfate')
 GrepAnvioHEAT('copper')
 GrepAnvioHEAT('efflux system')
+GrepAnvioHEAT('Fatty Acid desaturase')
+GrepAnvioHEAT('glyoxylate')
 
 
-
-
-tail(sort(rowSums(AnvioData)),5)
 
 
 InputFasta = readAAStringSet('~/Genomics/urea_MAQU.fasta',format='fasta')
@@ -182,3 +212,29 @@ as.character(unique(FindFuncinANVIO('lactate', ANVIO)[,'protein_cluster_id']))
 
 PC2Tree(c('PC_00000494','PC_00003588'),ANVIO, '~/')
 
+
+
+
+		sequences <- Biostrings::readAAStringSet(path,format='fasta')
+		print('load sequences done')
+
+		#align the sequences using CLUSTAL 2.1
+		aln <- msa(sequences)
+		aln <- msaConvert(aln, type="seqinr::alignment")
+		print('align sequences done')
+
+
+# dirty but fast: distance matrix and NJ tree reconstruction, and assesment of monophyly of a genus (CHANGE MARINOBACTER); 
+dist.aln <- dist.alignment(aln, "identity")
+njTree <- njs(dist.aln )
+njTree$edge.length = njTree$edge.length + 0.0000001
+
+p <- ggtree(midpoint.root(njTree),ladderize=TRUE)+geom_treescale() + xlim(0,2)
+p1 <- p + geom_tippoint()+ geom_tiplab(size=2)
+	print(p1)
+
+mnjTree = midpoint.root(njTree)
+mnjTree$tip.label[grep('Marinobacter ',mnjTree$tip.label)]
+
+
+njTree
