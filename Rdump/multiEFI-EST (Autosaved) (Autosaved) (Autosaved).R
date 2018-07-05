@@ -83,6 +83,8 @@ alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv')
 selectedACCession = atpD_cytoscape$name
 selectedACCession = alkB_cytoscape$name
 
+selectedACCession = as.character(alkB_cytoscape[alkB_cytoscape$Genus %in% c("Marinobacter",'Alcanivorax','Pseudomonas'),"name"])
+
 #selectedACCessionUNIPROT = paste('UNIPROT:',selectedACCession,sep='')
 seqPerFasta = 200
 nACC = length(selectedACCession)
@@ -104,7 +106,7 @@ for(i in c(1:nCycles)){
 	#print(selectedACCessionUNIPROT[start:end])
 
 	print(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''))
-	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'_uniprot_atpd.fasta',sep=''))
+	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'alkBselected_uniprot_atpd.fasta',sep=''))
 
 }
 
@@ -191,7 +193,7 @@ ralkB = ralkB[alkB_tree $tip.label,]
 
 
 groupInfo <- split(as.character(ralkB$name), ralkB$Genus)
-alkB_tree2 <- groupOTU(alkB_tree, groupInfo)
+chiroptera <- groupOTU(chiroptera, groupInfo)
 
 
 

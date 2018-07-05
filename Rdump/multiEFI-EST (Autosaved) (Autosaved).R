@@ -191,7 +191,7 @@ ralkB = ralkB[alkB_tree $tip.label,]
 
 
 groupInfo <- split(as.character(ralkB$name), ralkB$Genus)
-alkB_tree2 <- groupOTU(alkB_tree, groupInfo)
+chiroptera <- groupOTU(chiroptera, groupInfo)
 
 
 

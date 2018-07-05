@@ -186,12 +186,10 @@ ralkB$name = as.character(ralkB$name)
 
 
 ralkB = alkB_cytoscape[grepl(paste(alkB_tree $tip.label,collapse="|"), alkB_cytoscape $name), ]
-rownames(ralkB) = ralkB$name
-ralkB = ralkB[alkB_tree $tip.label,]
 
 
 groupInfo <- split(as.character(ralkB$name), ralkB$Genus)
-alkB_tree2 <- groupOTU(alkB_tree, groupInfo)
+chiroptera <- groupOTU(chiroptera, groupInfo)
 
 
 
