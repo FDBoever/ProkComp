@@ -41,6 +41,8 @@ alkB_cytoscape[alkB_cytoscape $Genus == 'Marinobacter',]
 
 ###########
 ralkB$Genera <- ralkB $Genus
+#da
+
 
 ralkB$Genera[ralkB$Genus!="Marinobacter"] <- NA
 ralkB$Genera[ralkB$Genus=="Alcanivorax"] <- "Alcanicorax"
