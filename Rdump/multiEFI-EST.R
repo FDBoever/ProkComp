@@ -79,9 +79,13 @@ write(selectedTaxonIDs,'dataTaxonID.txt')
 
 atpD_cytoscape = read.csv('~/Downloads/atpD_180_combined.csv')
 alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv')
+CYP153_cytoscape = read.csv('~/Downloads/CYP153_80.csv')
 
 selectedACCession = atpD_cytoscape$name
 selectedACCession = alkB_cytoscape$name
+selectedACCession = CYP153_cytoscape $name
+
+selectedACCession = as.character(alkB_cytoscape[alkB_cytoscape$Genus %in% c("Marinobacter",'Alcanivorax','Pseudomonas'),"name"])
 
 #selectedACCessionUNIPROT = paste('UNIPROT:',selectedACCession,sep='')
 seqPerFasta = 200
@@ -93,7 +97,7 @@ nCycles = ceiling(nACC/seqPerFasta)
 for(i in c(1:nCycles)){
 	if(i!=nCycles){
 		start=i* seqPerFasta-seqPerFasta +1
-		end=i* seqPerFasta +1
+		end=i* seqPerFasta
 	}else{
 		start= i* seqPerFasta-seqPerFasta +1
 		end= nACC
@@ -102,15 +106,16 @@ for(i in c(1:nCycles)){
 	#download.file(paste('https://www.uniprot.org/uniprot/?query=',paste(selectedACCession[start:end],collapse='+or+'),'&format=fasta',sep=''),destfile=paste('~/part',i,'.fasta',sep=''))
 	
 	#print(selectedACCessionUNIPROT[start:end])
-
-	print(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''))
-	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'_uniprot_atpd.fasta',sep=''))
+	print(c(start,end))
+	print(alkB_cytoscape[start:end,'Species'])
+	#print(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''))
+	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'CYP153_uniprot_atpd.fasta',sep=''))
 
 }
 
 
-
-##### http://www.ebi.ac.uk/Tools/dbfetch/dbfetch/uniprotkb/
+#	http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=A6F3V8&format=fasta&style=raw&Retrieve=Retrieve
+#	http://www.ebi.ac.uk/Tools/dbfetch/dbfetch/uniprotkb/
 
 #### 
 paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',paste(selectedACCession[start:end],collapse='%'),'&format=fasta&style=raw&Retrieve=Retrieve',sep='')
@@ -123,6 +128,54 @@ paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',paste(select
 
 
 
+########### IF REQUIRED CHECK FOR NON INCLUDED GENES (algicola mess up?!)################
+
+
+alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv',stringsAsFactors=FALSE)
+alkB_tree = read.tree('~/Genomics/alkB_fasttree.tre')
+
+alkB_tree=midpoint.root(alkB_tree)
+#atpD_tree =midpoint.root(atpD_tree)
+
+alkB_tree$tip.label = sub("\\_.*", "", alkB_tree$tip.label)
+alkB_tree$tip.label = sub("tr|", "", alkB_tree$tip.label)
+
+#alkB_tree$tip.label  = as.character(unique(unlist(strsplit(alkB_tree$tip.label, "[| ]")))
+
+correctedTipLabels = strsplit(alkB_tree$tip.label, "[| ]")
+correctedTipLabels = unlist(lapply(correctedTipLabels, tail, 1))
+alkB_tree$tip.label = correctedTipLabels
+
+selectedACCession = alkB_cytoscape[!grepl(paste(alkB_tree$tip.label,collapse='|'), alkB_cytoscape$name), c('name')]
+
+selectedACCession = setdiff(alkB_cytoscape[grepl('Marinobacter', alkB_cytoscape $Species),'name'],alkB_tree$tip.label[grep(paste(alkB_cytoscape[grepl('Marinobacter', alkB_cytoscape $Species),'name'],collapse='|'),alkB_tree$tip.label)])
+
+#selectedACCessionUNIPROT = paste('UNIPROT:',selectedACCession,sep='')
+seqPerFasta = 200
+nACC = length(selectedACCession)
+nCycles = ceiling(nACC/seqPerFasta)
+
+#UNIPROT is restricted in using 200 query items at the time, so we need some steps to get arount this
+
+for(i in c(1:nCycles)){
+	if(i!=nCycles){
+		start=i* seqPerFasta-seqPerFasta +1
+		end=i* seqPerFasta
+	}else{
+		start= i* seqPerFasta-seqPerFasta +1
+		end= nACC
+	}
+	#print(selectedACCession[start:end])
+	#download.file(paste('https://www.uniprot.org/uniprot/?query=',paste(selectedACCession[start:end],collapse='+or+'),'&format=fasta',sep=''),destfile=paste('~/part',i,'.fasta',sep=''))
+	
+	#print(selectedACCessionUNIPROT[start:end])
+	print(c(start,end))
+	print(alkB_cytoscape[start:end,'Species'])
+	#print(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''))
+	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'_2nextFiltr__alkBselected_uniprot_atpd.fasta',sep=''))
+
+}
+
 
 ###########################
 
@@ -130,6 +183,7 @@ sequences <- Biostrings::readAAStringSet('~/1_uniprot_atpd.fasta',format='fasta'
 
 sequence@ranges@NAMES = sub("\\_.*", "", sequence@ranges@NAMES)
 sequence@ranges@NAMES = sub("UNIPROT:", "", sequence@ranges@NAMES)
+
 
 
 path = "~/Documents/My Data/BRAZIL/Elections/"
@@ -191,7 +245,7 @@ ralkB = ralkB[alkB_tree $tip.label,]
 
 
 groupInfo <- split(as.character(ralkB$name), ralkB$Genus)
-alkB_tree2 <- groupOTU(alkB_tree, groupInfo)
+chiroptera <- groupOTU(chiroptera, groupInfo)
 
 
 

@@ -5,24 +5,10 @@ library(RColorBrewer)
 library(phytools)
 library(ggplot2)
 ###########################
+alkB_cytoscape = read.csv('~/Downloads/CYP153_80.csv',stringsAsFactors=FALSE)
+alkB_tree = read.tree('~/Genomics/CYP_update_fasttree.tre')
 
-alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv',stringsAsFactors=FALSE)
-alkB_tree = read.tree('~/Genomics/alkB_update_fasttree.tre')
 
-sequences <- Biostrings::readAAStringSet('~/Downloads/alkB_combined_final_aligned.fasta.bmge',format='fasta')
-
-W55 = toString(subseq(sequences,11,11))
-W55names = sequences@ranges@NAMES
-W55names = sub(' ', '_',W55names)
-W55names = sub("\\_.*", "", W55names)
-W55names = sub("tr|", "", W55names)
-correctedTipLabels = strsplit(W55names, "[| ]")
-correctedTipLabels = unlist(lapply(correctedTipLabels, tail, 1))
-W55names = correctedTipLabels
-
-dfW55 = data.frame(cbind('names'= W55names,'W55'= strsplit(W55,', ')[[1]]))
-rownames(dfW55)=dfW55$names
-dfW55$bulky = ifelse(dfW55$W55 %in% c('A','V','L',"I"),"yes","no")
 
 alkB_tree=midpoint.root(alkB_tree)
 #atpD_tree =midpoint.root(atpD_tree)
@@ -59,15 +45,22 @@ ralkB$Genera <- ralkB $Genus
 
 
 ralkB$Genera[ralkB$Genus!="Marinobacter"] <- NA
+ralkB$Genera[ralkB$Genus=="Marinobacter"] <- "Marinobacter"
+
 ralkB$Genera[ralkB$Genus=="Alcanivorax"] <- "Alcanicorax"
 ralkB$Genera[ralkB$Genus=="Pseudomonas"] <- "Pseudomonas"
 ralkB$Genera[ralkB$Genus=="Acinetobacter"] <- "Actinetobacter"
 ralkB$Genera[ralkB$Genus=="Rhodococcus"] <- "Rhodococcus"
 ralkB$Genera[ralkB$Genus=="Mycobacterium"] <- "Mycobacterium"
-ralkB$Genera[ralkB$Genus=="Burkholderia"] <- "Burkholderia"
-ralkB$Genera[ralkB$Genus=="Micromonospora"] <- "Micromonospora"
-ralkB$Genera[ralkB$Genus=="Psychrobacter"] <- "Psychrobacter"
-ralkB$Genera[ralkB$Genus=="Streptomyces"] <- "Streptomyces"
+ralkB$Genera[ralkB$Genus=="Gordonia"] <- "Gordonia"
+ralkB$Genera[ralkB$Genus=="Hyphomonas"] <- "Hyphomonas"
+ralkB$Genera[ralkB$Genus=="Caulobacter"] <- "Caulobacter"
+ralkB$Genera[ralkB$Genus=="Parvibaculum"] <- "Parvibaculum"
+ralkB$Genera[ralkB$Genus=="Nocardioides"] <- "Nocardioides"
+ralkB$Genera[ralkB$Genus=="Phenylobacterium"] <- "Phenylobacterium"
+ralkB$Genera[ralkB$Genus=="Erythrobacter"] <- "Erythrobacter"
+ralkB$Genera[ralkB$Genus=="Bradyrhizobium"] <- "Bradyrhizobium"
+ralkB$Genera[ralkB$Genus=="Dietzia"] <- "Dietzia"
 
 
 
@@ -78,7 +71,7 @@ tree = alkB_tree
 my_info <- data.table(tip_lbs = ralkB$name,
                       groupA = ralkB$Genera,
                       groupB = ralkB$PFAM,
-                      groupC = dfW55$bulky,
+                      #groupC = dfW55$bulky,
                       val = ralkB$Sequence.Length)
 
 grA <- split(my_info$tip_lbs, my_info$groupA)
@@ -96,6 +89,30 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 fcolors = getPalette(20)
 #A_fcolors = getPalette(unique(my_info$groupA))
 fcolors=c('#3D505E','#76E6CA','#E59535','#DB0000','#E6999A','#74C94C','#969696','gray45','gray85','#FFFD5D','#BFFFFE','#AD23C4','#796A33',getPalette(20))
+
+fcolors=c('#3D505E','#76E6CA','#E59535','#DB0000','#E6999A','#74C94C','#969696','gray45','gray85','#FFFD5D','#BFFFFE','#AD23C4','#796A33',getPalette(20))
+
+fcolors=c(	'#3D505E',#Acineto
+			'#76E6CA',#Alcanivorax
+			'#E59535',#Brady
+			'#AF6729',#Caulo
+			'#E17597',#Dietzia
+			'#E884B9',#Erythro
+			'#C08EA9',#Gordania
+			'#FF990A',#Hypho
+			'#DB0000',#Marinobacter
+			'#74C94C',#Mycobacterium
+			'#54A453',#Nocardiodes
+			'#000000',#None
+			'#469F6C',#Pravi
+			'gray80',#PFAM
+			'gray60',#PFAM
+			'gray40',#PFAM
+			'gray20',#PFAM
+			'#526E9F',#Phenylo
+			'#AD23C4')#Rhodococcus
+			
+			
 
 tree_plot <- 
   ggtree(tr = tree_grA, 
@@ -285,6 +302,7 @@ tree_bars
 
 
 
+open_tree(tree_bars, angle=180)
 
 
 
