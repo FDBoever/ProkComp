@@ -26,7 +26,9 @@ echo '['`date "+%H:%M:%S"`'] - Making blastdb ...';
 makeblastdb -in all.fasta  -out protDB_marinobacter -dbtype prot
 
 
-
+echo '...';
+echo '...';
+echo '...';
 
 
 echo '['`date "+%H:%M:%S"`'] - Splitting Multifasta file';
