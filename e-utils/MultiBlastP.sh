@@ -116,7 +116,7 @@ for fas in $SPLITPATH*.fasta; do
 	echo '['`date "+%H:%M:%S"`'] - Formatting output table [blast_local_results.csv]...';
 
 	paste ${FILENAME}/${fname}.Origin.txt ${FILENAME}/${fname}.results.out | column -s $'\t' -t > ${FILENAME}/${fname}.blast_local_results.tmp
-	awk 'BEGIN {print "sOrganism\tqseqid\tsseqid\tslen\tqstart\tqend\tlength\tmismatch\tgapopen\tgaps\tsseq"} {print}' ${FILENAME}/${fname}.blast_local_results.tmp > ${FILENAME}.blast_local_results.csv
+	awk 'BEGIN {print "sOrganism\tqseqid\tsseqid\tslen\tqstart\tqend\tlength\tmismatch\tgapopen\tgaps\tsseq"} {print}' ${FILENAME}/${fname}.blast_local_results.tmp > ${FILENAME}/${fname}.blast_local_results.csv
 	rm ${FILENAME}/${fname}.blast_local_results.tmp
 done
 echo '===================================================';
@@ -131,6 +131,8 @@ done
 echo '['`date "+%H:%M:%S"`'] - Formatting overall abundance table...';
 Rscript -e 'loadtab<-read.table("~/testUltra/Long_abundance.txt");wide = reshape(loadtab, idvar = "V1", timevar = "V2", direction = "wide");names(wide) <- gsub("V3.", "", names(wide));rownames(wide)=wide$V1;wide=wide[,2:ncol(wide)];write.table(wide,file="abundance_table.txt",quote=FALSE)'
 
+mv Long_abundance.txt ${FILENAME}/${FILENAME}.Long_abundance.txt
+mv abundance_table.txt ${FILENAME}/${FILENAME}.abundance_table.txt
 
 #read.table('~/testUltra/abundance_table.txt')
 
