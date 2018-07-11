@@ -76,8 +76,13 @@ echo '['`date "+%H:%M:%S"`'] - Splitting Multifasta file';
 awk -v var="${SPLITPATH}/" -F "|" '/^>/ {F = var $2".fasta"} {print > F}' ${fasta};
 #"./"${FILENAME}"/"
 
+echo '['`date "+%H:%M:%S"`'] - Preparing FastSearch file: locus2Name.txt';
 
-
+awk 'FNR==1{if ($0~">") print $0;}' faa/* | awk -F' ' '{print $1}' | sed 's/.\{6\}$//' | sed 's/^.//' > locus_heads.txt
+basename ./faa/* | sed 's/.\{4\}$//' > strainNames.txt
+paste locus_heads.txt strainNames.txt > locus2Name.txt
+rm strainNames.txt
+rm locus_heads.txt
 
 for fas in $SPLITPATH*.fasta; do 
 	fname=`basename ${fas} .fasta`
@@ -97,13 +102,20 @@ for fas in $SPLITPATH*.fasta; do
  	awk 'BEGIN { OFS = "\n" } { print $2}' ${FILENAME}/${fname}.results.out > ${FILENAME}/${fname}.lookup.txt
 
 	echo '['`date "+%H:%M:%S"`'] - Calculating abundance table ...';
+	
+	
 	#trace back the organism
 	cat ${FILENAME}/${fname}.lookup.txt | while read line
 	do
-   		find faa/*.faa -type f -print0 | xargs -0 grep -l $line | xargs -I"{}" basename {} .faa >> ${FILENAME}/${fname}.Origin.txt
+   		LKUP=`echo $line | sed 's/.\{6\}$//'`
+   		grep -w $LKUP locus2Name.txt | awk -F '\t' '{print $2}' >> ${FILENAME}/${fname}.Origin.txt
+   		
+   		#find faa/*.faa -type f -print0 | xargs -0 grep -l $line | xargs -I"{}" basename {} .faa >> ${FILENAME}/${fname}.Origin.txt
+		
+	
 	done
 
-	#determin abundance of genes, per organisms
+	#determine abundance of genes, per organisms
 	cat ${FILENAME}/${fname}.Origin.txt | while read line
 	do
 		countl=`grep -c ${line} ${FILENAME}/${fname}.Origin.txt`
@@ -118,9 +130,20 @@ for fas in $SPLITPATH*.fasta; do
 	paste ${FILENAME}/${fname}.Origin.txt ${FILENAME}/${fname}.results.out | column -s $'\t' -t > ${FILENAME}/${fname}.blast_local_results.tmp
 	awk 'BEGIN {print "sOrganism\tqseqid\tsseqid\tslen\tqstart\tqend\tlength\tmismatch\tgapopen\tgaps\tsseq"} {print}' ${FILENAME}/${fname}.blast_local_results.tmp > ${FILENAME}/${fname}.blast_local_results.csv
 	rm ${FILENAME}/${fname}.blast_local_results.tmp
+	
+	#Derive those sequences that are assumed not on NCBI
+	echo '['`date "+%H:%M:%S"`'] - extracting the "nonNCBI" sequences...';
+	nonNCBI=`cat non_NCBI_strains.txt | paste -sd "|" -`
+	grep -E ${nonNCBI} ${FILENAME}/${fname}.blast_local_results.csv > ${FILENAME}/${fname}.blast_local_nonNCBI.tmp
+	awk 'BEGIN {print "sOrganism\tqseqid\tsseqid\tslen\tqstart\tqend\tlength\tmismatch\tgapopen\tgaps\tsseq"} {print}' ${FILENAME}/${fname}.blast_local_nonNCBI.tmp > ${FILENAME}/${fname}.blast_local_nonNCBI.csv
+	rm ${FILENAME}/${fname}.blast_local_nonNCBI.tmp
+ 	awk 'BEGIN { OFS = "\n" } { print ">"$2, $10 }' ${FILENAME}/${fname}.blast_local_nonNCBI.csv > ${FILENAME}/${fname}.nonNCBI.fasta
+
+	#mkdir ${FILENAME}/${fname}
+	#mv ${FILENAME}/${fname}* ${FILENAME}/${fname}
+
 done
 echo '===================================================';
-
 
 for gene2 in ${FILENAME}/*abundance_gene2.txt; do
 		echo "Processing $gene2"
@@ -140,10 +163,7 @@ endtime=`date +%s`
 runtime=$((endtime-starttime))
 echo '['`date "+%H:%M:%S"`'] - Finished .... [total runtime:' ${runtime} 'seconds]';
 echo '===================================================';
-
-
-
-
+echo ''
 
 
 
