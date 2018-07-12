@@ -2,6 +2,8 @@
 # Protein-Protein BLAST 2.7.1+
 # this scripts needs BLAST+ < 2.6
 
+#need to include -qcov_hsp_perc 80 (as alignment coverage)
+
 usage()
 {
     echo "usage: sysinfo_page [[[-f --fasta ] [-e --evalue]] | [-h --help]]"
@@ -86,11 +88,17 @@ rm locus_heads.txt
 
 for fas in $SPLITPATH*.fasta; do 
 	fname=`basename ${fas} .fasta`
+	ANNOTATION=`curl -s https://www.uniprot.org/uniprot/$fname.txt | grep Full | awk -F 'Full=' '{print $2}' | awk -F '{' '{print $1}'`
+
 	echo '-------------------------------------------';
 	echo "Processing $fname"
 	echo '-------------------------------------------';
-	
-	
+
+	#adding to annotation file
+	echo ${ANNOTATION}
+	echo '['`date "+%H:%M:%S"`'] - Adding to annotation file ...';
+	echo ${fname} '\t' ${ANNOTATION} >> ${FILENAME}/${FILENAME}.annotation_file.txt
+
 	#local blast, output saved as results.out
 	echo '['`date "+%H:%M:%S"`'] - Running blastp ...';
 	blastp -query $fas -db protDB_marinobacter -out ${FILENAME}/${fname}.results.out -outfmt "6 qseqid sseqid slen qstart qend length mismatch gapopen gaps sseq" -evalue 1e-30
@@ -164,6 +172,16 @@ runtime=$((endtime-starttime))
 echo '['`date "+%H:%M:%S"`'] - Finished .... [total runtime:' ${runtime} 'seconds]';
 echo '===================================================';
 echo ''
+
+
+
+# FOR R DOWNSTREAM VISUALISATION
+#------------------------------------
+#mat5 = read.table('~/testUltra/kegg_denitri_VT8/kegg_denitri_VT8.abundance_table.txt')
+#cv = read.table('~/testUltra/kegg_denitri_VT8/kegg_denitri_VT8.annotation_file.txt',sep='\t')
+#rownames(mat5)=cv$V2
+#mat5[is.na(mat5)]=0
+#heatmap.2(as.matrix((mat5)),trace='none',col=colorRampPalette(c("white", "black", "green"))(n = 299),margins=c(20,20))
 
 
 
