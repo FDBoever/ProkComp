@@ -75,7 +75,8 @@ cp ${fasta} ${FILENAME}'/InputFasta/'
 
 echo '['`date "+%H:%M:%S"`'] - Splitting Multifasta file';
 #awk -F "|" '/^>/ {F = "./"$SPLITPATH"/"$2".fasta"} {print > F}' ${fasta};
-awk -v var="${SPLITPATH}/" -F "|" '/^>/ {F = var $2".fasta"} {print > F}' ${fasta};
+#awk -v var="${SPLITPATH}/" -F "|" '/^>/ {F = var $2".fasta"} {print > F}' ${fasta};
+awk -v var="${SPLITPATH}/" -F "|" '/^>/{close(var i".fasta");i++} {F = var i".fasta"} {print > F}' ${fasta}; 
 #"./"${FILENAME}"/"
 
 echo '['`date "+%H:%M:%S"`'] - Preparing FastSearch file: locus2Name.txt';
@@ -87,7 +88,9 @@ rm strainNames.txt
 rm locus_heads.txt
 
 for fas in $SPLITPATH*.fasta; do 
-	fname=`basename ${fas} .fasta`
+	#fname=`basename ${fas} .fasta`
+	fname=`cat ${fas} | grep '>'  | awk  -F "|" '{print $2}'`
+	 
 	ANNOTATION=`curl -s https://www.uniprot.org/uniprot/$fname.txt | grep Full | awk -F 'Full=' '{print $2}' | awk -F '{' '{print $1}'`
 
 	echo '-------------------------------------------';
