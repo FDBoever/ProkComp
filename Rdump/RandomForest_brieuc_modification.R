@@ -13,16 +13,32 @@ library(randomForest)
 #prepare the dataset suitable for randomForest()
 RFdf = data.frame(t(geneCount),'group'=as.character(grouping_factors$group2))
 
+
+# for the sake of example, here we run 3 times the same RF without changing the parameters
+# when later comparing the mean decrease accuracy values for all genes, we can see how far off we are in being accurate
+
 RF <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
 RF.1 <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
 RF.2 <- randomForest(group ~ ., data= RFdf,importance=T, proximity=T)
 
 #RF <- randomForest(group ~ ., data= RFdf, importance=T, proximity=T,ntree=1500,keep.forest=F)
 
-
 importance_rf_original<-data.frame(importance(RF,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
 importance_rf_original.1<-data.frame(importance(RF.1,type=1))
 importance_rf_original.2<-data.frame(importance(RF.2,type=1))
+
+impDat = cbind(importance_rf_original$MeanDecreaseAccuracy,importance_rf_original.1$MeanDecreaseAccuracy,importance_rf_original.2$MeanDecreaseAccuracy)
+rownames(impDat)=rownames(importance_rf_original)
+colnames(impDat)=c('i1','i2','i3')
+impDat=data.frame(impDat)
+o1= ggplot(data=impDat,aes(x=i1,y=i2))+geom_point()+theme_classic() 
+o2 = ggplot(data=impDat,aes(x=i1,y=i3))+geom_point()+theme_classic()
+o3 = ggplot(data=impDat,aes(x=i2,y=i3))+geom_point()+theme_classic()
+multiplot(o1,o2,o3,cols=3)
+
+cor(importance_rf_original, importance_rf_original.1)
+cor(importance_rf_original, importance_rf_original.2)
+cor(importance_rf_original.1, importance_rf_original.2) # A correlation of 0.98 for locus importance values between forests is extremely good, so we'll use 25,000 trees for the remaining forests
 
 ###########################################################################################################################################
 
@@ -33,8 +49,8 @@ importance_rf_original.2<-data.frame(importance(RF.2,type=1))
 # We are looking for a plateau where the out-of-bag error rate (OOB-ER) stops decreasing with larger values of ntree
 # Once we reach the plateau, we will choose the mtry value that minimizes the OOB-ER.
 
-t(geneCount),'group'=as.character(grouping_factors$group2)
-RF <- randomForest(group ~ ., data= RFdf)
+#t(geneCount),'group'=as.character(grouping_factors$group2)
+#RF <- randomForest(group ~ ., data= RFdf)
 
 
 #### ----- optimisation of mtry
@@ -92,7 +108,8 @@ rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importanc
 rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=60, strata=grouping_factors$group2)#, sampsize=sample_size)
 #save(rf_all_2,file="rf_all_2.Rdata")
 
-
+rf_all_3 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=1000, ntree=60, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
 
 
 #Check correlation of locus importance values between forests 
@@ -100,9 +117,22 @@ importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean dec
 colnames(importance_rf_all_1)<-c("importance")
 importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
 colnames(importance_rf_all_2)<-c("importance")
+importance_rf_all_3<-data.frame(importance(rf_all_3,type=1))
+colnames(importance_rf_all_3)<-c("importance")
+
+impDat2 = cbind(importance_rf_all_1$importance, importance_rf_all_2$importance, importance_rf_all_3$importance)
+rownames(impDat2)=rownames(importance_rf_all_1)
+colnames(impDat2)=c('i1','i2','i3')
+impDat2 =data.frame(impDat2)
+oa1= ggplot(data= impDat2,aes(x=i1,y=i2))+geom_point()+theme_classic()
+oa2 = ggplot(data= impDat2,aes(x=i1,y=i3))+geom_point()+theme_classic()
+oa3 = ggplot(data= impDat2,aes(x=i2,y=i3))+geom_point()+theme_classic()
+multiplot(oa1,oa2,oa3,cols=3)
+
 
 cor(importance_rf_all_1,importance_rf_all_2) # A correlation of 0.98 for locus importance values between forests is extremely good, so we'll use 25,000 trees for the remaining forests
-
+cor(importance_rf_all_1,importance_rf_all_3)
+cor(importance_rf_all_2,importance_rf_all_3)
 
 store.cor = matrix(data=NA , nrow = 0, ncol = 3)
 ntree.seq = c(seq(from = 1, to = 20 , by = 2),seq(from = 20, to = 100 , by = 5),seq(from = 100, to = 1000 , by = 100),seq(from = 1000, to = 10000 , by = 500),seq(from = 12000, to = 30000 , by = 2000))
@@ -141,7 +171,6 @@ plot(store.cor)
 
 colnames(store.cor) = c('cor','ntree','mtry')
 store.cor = data.frame(store.cor)
-ggplot(store.cor,aes(ntree,cor))+geom_line() + geom_point() 
 ggplot(store.cor,aes(ntree,cor)) + geom_point() 
 
 ggplot(store.cor,aes(ntree,cor,colour=as.factor(mtry)))+geom_line() + geom_point() +scale_colour_manual(values= clrs)
@@ -159,6 +188,120 @@ colnames(MeanDecreaseAccuracy)=c('1000_60',paste(store.cor$ntree, store.cor$mtry
 
 plot(MeanDecreaseGini$'30000_5144', MeanDecreaseGini$'28000_5144')
 plot(MeanDecreaseGini$'30000_5144', MeanDecreaseAccuracy$'30000_514')
+
+###########################################################################################################################################
+
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_1,file="rf_all_1.Rdata")
+
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+rf_all_3 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+
+#Check correlation of locus importance values between forests 
+importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+colnames(importance_rf_all_1)<-c("importance")
+importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
+colnames(importance_rf_all_2)<-c("importance")
+importance_rf_all_3<-data.frame(importance(rf_all_3,type=1))
+colnames(importance_rf_all_3)<-c("importance")
+
+impDat2 = cbind(importance_rf_all_1$importance, importance_rf_all_2$importance, importance_rf_all_3$importance)
+rownames(impDat2)=rownames(importance_rf_all_1)
+colnames(impDat2)=c('i1','i2','i3')
+impDat2 =data.frame(impDat2)
+oa1= ggplot(data= impDat2,aes(x=i1,y=i2))+geom_point()+geom_smooth(method='lm',color='darkblue')+theme_classic()
+oa2 = ggplot(data= impDat2,aes(x=i1,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+oa3 = ggplot(data= impDat2,aes(x=i2,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+multiplot(oa1,oa2,oa3,cols=3)
+
+
+###########################################################################################################################################
+
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_1,file="rf_all_1.Rdata")
+
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+rf_all_3 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+
+#Check correlation of locus importance values between forests 
+importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+colnames(importance_rf_all_1)<-c("importance")
+importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
+colnames(importance_rf_all_2)<-c("importance")
+importance_rf_all_3<-data.frame(importance(rf_all_3,type=1))
+colnames(importance_rf_all_3)<-c("importance")
+
+impDat2 = cbind(importance_rf_all_1$importance, importance_rf_all_2$importance, importance_rf_all_3$importance)
+rownames(impDat2)=rownames(importance_rf_all_1)
+colnames(impDat2)=c('i1','i2','i3')
+impDat2 =data.frame(impDat2)
+oa1= ggplot(data= impDat2,aes(x=i1,y=i2))+geom_point()+geom_smooth(method='lm',color='darkblue')+theme_classic()
+oa2 = ggplot(data= impDat2,aes(x=i1,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+oa3 = ggplot(data= impDat2,aes(x=i2,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+multiplot(oa1,oa2,oa3,cols=3)
+
+###########################################################################################################################################
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree=1000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_1,file="rf_all_1.Rdata")
+
+rf_all_2 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 1000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+rf_all_3 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree= 1000, strata=grouping_factors$group2)#, sampsize=sample_size)
+#save(rf_all_2,file="rf_all_2.Rdata")
+
+
+#Check correlation of locus importance values between forests 
+importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+colnames(importance_rf_all_1)<-c("importance")
+importance_rf_all_2<-data.frame(importance(rf_all_2,type=1))
+colnames(importance_rf_all_2)<-c("importance")
+importance_rf_all_3<-data.frame(importance(rf_all_3,type=1))
+colnames(importance_rf_all_3)<-c("importance")
+
+impDat2 = cbind(importance_rf_all_1$importance, importance_rf_all_2$importance, importance_rf_all_3$importance)
+rownames(impDat2)=rownames(importance_rf_all_1)
+colnames(impDat2)=c('i1','i2','i3')
+impDat2 =data.frame(impDat2)
+oa1= ggplot(data= impDat2,aes(x=i1,y=i2))+geom_point()+geom_smooth(method='lm',color='darkblue')+theme_classic()
+oa2 = ggplot(data= impDat2,aes(x=i1,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+oa3 = ggplot(data= impDat2,aes(x=i2,y=i3))+geom_point() +geom_smooth(method='lm',color='darkblue') +theme_classic()
+multiplot(oa1,oa2,oa3,cols=3)
+###########################################################################################################################################
+
+rf_all_1 = randomForest(x = t(geneCount), y = grouping_factors$group2, importance=TRUE ,proximity=TRUE, mtry=round(p/3), ntree=25000, strata=grouping_factors$group2)#, sampsize=sample_size)
+importance_rf_all_1<-data.frame(importance(rf_all_1,type=1)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+importance_rf_all_1.gini<-data.frame(importance(rf_all_1,type=2)) #type=1 is mean decrease in accuracy for classification, so a large, positive value means that permuting the variable led to a big decrease in prediction accuracy (which is indicative of an important locus)
+
+importance_rf_all_1.gini $features <- rownames(importance_rf_all_1.gini)
+
+importance_rf_all_1.gini  =  importance_rf_all_1.gini [order(-importance_rf_all_1.gini  $MeanDecreaseGini),]
+ggplot(data = importance_rf_all_1.gini[1:50,], aes(x= reorder(features, -MeanDecreaseGini), y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous(expand = c(0, 0))
+
+ggplot(data = importance_rf_all_1.gini, aes(x= reorder(features, -MeanDecreaseGini), y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")+theme_classic()+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous(expand = c(0, 0))
+
+hist(importance_rf_all_1.gini$MeanDecreaseGini)
+# Identifying Important Features
+# -----------------------------------
+# Mean decrease in Gini
+MeanDecreaseGini_imp <- as.data.frame( MeanDecreaseGini $'30000_5144')
+MeanDecreaseGini_imp $features <- rownames(MeanDecreaseGini)
+colnames(MeanDecreaseGini_imp) = c('MeanDecreaseGini','features')
+MeanDecreaseGini_imp =  MeanDecreaseGini_imp[order(-MeanDecreaseGini_imp $MeanDecreaseGini),]
+
+#ggplot(data = MeanDecreaseGini_imp, aes(x= reorder(features, MeanDecreaseGini) , y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")
+
+ggplot(data = MeanDecreaseGini_imp[1:20,], aes(x= reorder(features, -MeanDecreaseGini), y= MeanDecreaseGini)) + geom_bar(stat="identity") +  ylab("Mean Decrease in Gini (Variable Importance)") + ggtitle("RF Classification Variable Importance Distribution")+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous(expand = c(0, 0))
+
+
 
 
 # Identifying Important Features

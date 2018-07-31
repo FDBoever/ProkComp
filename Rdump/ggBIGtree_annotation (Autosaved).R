@@ -5,10 +5,11 @@ library(RColorBrewer)
 library(phytools)
 library(ggplot2)
 ###########################
-
+~/02831/FastTree_combined
 alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv',stringsAsFactors=FALSE)
 alkB_tree = read.tree('~/Genomics/alkB_update_fasttree.tre')
 alkB_tree = read.tree('~/FastTree_alkB_final_noFragment_nonNCBI')
+alkB_tree = read.tree('~/02831/FastTree_combined')
 
 
 sequences <- Biostrings::readAAStringSet('~/Downloads/alkB_combined_final_aligned.fasta.bmge',format='fasta')

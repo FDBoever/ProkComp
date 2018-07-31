@@ -16,9 +16,14 @@ library(gdata)
 library(ggplot2)
 library(plotflow)
 library(dplyr)
-
+library(RColorBrewer)
 ###########################
 
+ 
+ #CAUTION!
+ # MAKE SURE YOU HAVE THE GENES OF INTEREST AS RECORDS IN THE DATAFRAME
+ # Start=0 , end =nr of AA in total sequence
+ 
  
 dfDomains = data.frame('Domain'=c('UPF0257','1gene','KOG4659','6FB3_B','4O9X_A','5KIS_B','COG3209','PF14436.5','gene2','LysM','5JCE_B'),'Type'=c('UPF0257','1gene','KOG4659','6FB3_B','4O9X_A','5KIS_B','COG3209','PF14436.5','gene2','LysM','5JCE_B'),'Start'=c(49,0,567,486,698,799,569, 1524,0,3, 82),'Stop'=c(211 ,1616 ,1460,1456,1475,1462,1450, 1615,702,48, 139))
 
@@ -39,5 +44,5 @@ plot +
   panel.background =  element_blank(), 
   axis.ticks = element_blank(), 
   legend.position ="none", 
-  axis.text = element_blank())+ylim(c(0,1616))
-
+  axis.text = element_blank())+scale_color_manual(values = colorRampPalette(brewer.pal(9, "Set1"))(dim(dfDomains)[1]))
+  

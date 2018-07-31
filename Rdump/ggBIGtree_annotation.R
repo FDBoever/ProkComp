@@ -8,6 +8,8 @@ library(ggplot2)
 
 alkB_cytoscape = read.csv('~/Downloads/alkB_full_combined.csv',stringsAsFactors=FALSE)
 alkB_tree = read.tree('~/Genomics/alkB_update_fasttree.tre')
+alkB_tree = read.tree('~/FastTree_alkB_final_noFragment_nonNCBI')
+
 
 sequences <- Biostrings::readAAStringSet('~/Downloads/alkB_combined_final_aligned.fasta.bmge',format='fasta')
 
@@ -78,7 +80,7 @@ tree = alkB_tree
 my_info <- data.table(tip_lbs = ralkB$name,
                       groupA = ralkB$Genera,
                       groupB = ralkB$PFAM,
-                      groupC = dfW55$bulky,
+                      groupC = ralkB$Genera,
                       val = ralkB$Sequence.Length)
 
 grA <- split(my_info$tip_lbs, my_info$groupA)
@@ -95,7 +97,7 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 #fcolors = getPalette(unique(my_info$groupB))
 fcolors = getPalette(20)
 #A_fcolors = getPalette(unique(my_info$groupA))
-fcolors=c('#3D505E','#76E6CA','#E59535','#DB0000','#E6999A','#74C94C','#969696','gray45','gray85','#FFFD5D','#BFFFFE','#AD23C4','#796A33',getPalette(20))
+fcolors=c('#3D505E','#76E6CA','#E59535','#DB0000','#E6999A','#74C94C','gray45','gray85','#FFFD5D','#BFFFFE','#AD23C4','#796A33',getPalette(20))
 
 tree_plot <- 
   ggtree(tr = tree_grA, 
@@ -105,7 +107,7 @@ tree_plot <-
          # set line thikness
          size = 0.4) + scale_color_manual(name = 'Group A',
                      values = fcolors)
-
+tree_plot  = open_tree(tree_plot, 20)
 
 tree_plot <- tree_plot %<+% my_info 
 
@@ -283,6 +285,7 @@ aes(x = my_x,y = y_mid,angle = angle_adj,hjust = hjust_adj,label = groupA),vjust
 tree_bars
 
 
+open_tree(tree_bars, 20)
 
 
 

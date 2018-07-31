@@ -65,8 +65,6 @@ selectCols = c("SUID","BRENDA.ID","CAZY.Name","Class","Description","EC","Family
 selectedTaxonIDs = uberEST$Taxonomy.ID
 write(selectedTaxonIDs,'dataTaxonID.txt')
 
-~/Downloads/dbfetch_res1.fasta
-
 # TO DOWNLOAD THE RALTED AA SEQUENCES, (rather creative way of doing this), wget the below
 #paste('https://www.uniprot.org/uniprot/?query=',paste(selectedACCession,collapse='+or+'),'&format=fasta ',sep='')
 #paste('https://www.uniprot.org/uniprot/?query=',paste(selectedACCession[1:10],collapse='+or+'),'&format=fasta ',sep='')
@@ -86,6 +84,12 @@ selectedACCession = alkB_cytoscape$name
 selectedACCession = CYP153_cytoscape $name
 
 selectedACCession = as.character(alkB_cytoscape[alkB_cytoscape$Genus %in% c("Marinobacter",'Alcanivorax','Pseudomonas'),"name"])
+
+
+####################################################################################################
+# In Order to download uniprot sequences we need to split up the Selectedaccession into 200 accessions each
+# UNIPROT queries are restricted to 200 items at the time
+####################################################################################################
 
 #selectedACCessionUNIPROT = paste('UNIPROT:',selectedACCession,sep='')
 seqPerFasta = 200
@@ -109,7 +113,7 @@ for(i in c(1:nCycles)){
 	print(c(start,end))
 	print(alkB_cytoscape[start:end,'Species'])
 	#print(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''))
-	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'CYP153_uniprot_atpd.fasta',sep=''))
+	download.file(paste('http://www.ebi.ac.uk/Tools/dbfetch/dbfetch?db=uniprotkb&id=',URLencode(paste(selectedACCession[start:end],collapse='%2C')),'&format=fasta&style=raw&Retrieve=Retrieve',sep=''), paste('~/',i,'VGR_uniprot_atpd.fasta',sep=''))
 
 }
 
@@ -139,6 +143,8 @@ alkB_tree=midpoint.root(alkB_tree)
 
 alkB_tree$tip.label = sub("\\_.*", "", alkB_tree$tip.label)
 alkB_tree$tip.label = sub("tr|", "", alkB_tree$tip.label)
+
+
 
 #alkB_tree$tip.label  = as.character(unique(unlist(strsplit(alkB_tree$tip.label, "[| ]")))
 
