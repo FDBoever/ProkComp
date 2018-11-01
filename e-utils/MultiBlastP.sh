@@ -2,7 +2,7 @@
 # Protein-Protein BLAST 2.7.1+
 # this scripts needs BLAST+ < 2.6
 
-#need to include -qcov_hsp_perc 80 (as alignment coverage)
+#could -qcov_hsp_perc 80 (as alignment coverage)
 
 usage()
 {
@@ -43,6 +43,16 @@ echo '['`date "+%H:%M:%S"`'] - Starting multiBlastp.sh';
 echo '['`date "+%H:%M:%S"`'] - Extracting genome annotations (.faa) from prokka directory';
 find prokka -name \*.faa -exec cp {} ./faa \;
 
+echo '...';
+
+GENOMECOUNT=`ls ./faa | grep -v ^l | wc -l` 
+echo 'Number of Genomes to be analysed:' ${GENOMECOUNT}
+
+MLSTSTRING=`printf '%0.s1 ' $(seq 1 $GENOMECOUNT)` 
+MLSTSTRING2=`echo ${MLSTSTRING} | rev | cut -c3- | rev` 
+echo 'MLST:' ${MLSTSTRING}
+echo 'MLST:' ${MLSTSTRING2}
+
 #make a gaint fasta-file by merging annotation files (from ./faa/)
 echo '['`date "+%H:%M:%S"`'] - Merging annotations for blastdb generation';
 cat ./faa/*.faa > all.fasta
@@ -52,25 +62,28 @@ echo '['`date "+%H:%M:%S"`'] - Making blastdb ...';
 makeblastdb -in all.fasta  -out protDB_marinobacter -dbtype prot
 
 
-echo '...';
-echo '...';
-echo '...';
 
+echo '...';
+echo '...';
+echo '...';
 
 echo ''
 echo ' ::: INPUT :::'
 
 echo 'FastaFile:' ${fasta}
 echo 'e-value:' ${evalue}
-
 FILENAME=`basename ${fasta} .fasta`
 outdir=${FILENAME};
+
+echo '['`date "+%H:%M:%S"`'] - Removing pre-existing run';
+rm -rf ${FILENAME}
+
+echo '['`date "+%H:%M:%S"`'] - Setting up directories';
 mkdir ${FILENAME};
 mkdir ${FILENAME}'/InputFasta/';
 mkdir ${FILENAME}'/SplitFasta/';
 
 SPLITPATH=${FILENAME}"/SplitFasta/"
-echo $SPLITPATH
 cp ${fasta} ${FILENAME}'/InputFasta/'
 
 echo '['`date "+%H:%M:%S"`'] - Splitting Multifasta file';
@@ -80,6 +93,9 @@ awk -v var="${SPLITPATH}/" -F "|" '/^>/{close(var i".fasta");i++} {F = var i".fa
 #"./"${FILENAME}"/"
 
 echo '['`date "+%H:%M:%S"`'] - Preparing FastSearch file: locus2Name.txt';
+
+
+rm locus2Name.txt
 
 awk 'FNR==1{if ($0~">") print $0;}' faa/* | awk -F' ' '{print $1}' | sed 's/.\{6\}$//' | sed 's/^.//' > locus_heads.txt
 basename ./faa/* | sed 's/.\{4\}$//' > strainNames.txt
@@ -120,10 +136,8 @@ for fas in $SPLITPATH*.fasta; do
 	do
    		LKUP=`echo $line | sed 's/.\{6\}$//'`
    		grep -w $LKUP locus2Name.txt | awk -F '\t' '{print $2}' >> ${FILENAME}/${fname}.Origin.txt
-   		
    		#find faa/*.faa -type f -print0 | xargs -0 grep -l $line | xargs -I"{}" basename {} .faa >> ${FILENAME}/${fname}.Origin.txt
-		
-	
+			
 	done
 
 	#determine abundance of genes, per organisms
@@ -150,8 +164,10 @@ for fas in $SPLITPATH*.fasta; do
 	rm ${FILENAME}/${fname}.blast_local_nonNCBI.tmp
  	awk 'BEGIN { OFS = "\n" } { print ">"$2, $10 }' ${FILENAME}/${fname}.blast_local_nonNCBI.csv > ${FILENAME}/${fname}.nonNCBI.fasta
 
-	#mkdir ${FILENAME}/${fname}
-	#mv ${FILENAME}/${fname}* ${FILENAME}/${fname}
+	
+	#For MLST (MLSA) phylogenetic analysis, we produce the fasta files with the genome names rather than locus_tags, to enable downstream concatenation...
+	echo '['`date "+%H:%M:%S"`'] - Producing fasta files with Genome_name as fasta headers...';
+	cat ${FILENAME}/${fname}.local_blast.fasta  | sed 's/\(.*\)_.*/\1/' > ${FILENAME}/${fname}.fasta
 
 done
 echo '===================================================';
@@ -168,13 +184,28 @@ Rscript -e 'loadtab<-read.table("~/testUltra/Long_abundance.txt");wide = reshape
 mv Long_abundance.txt ${FILENAME}/${FILENAME}.Long_abundance.txt
 mv abundance_table.txt ${FILENAME}/${FILENAME}.abundance_table.txt
 
-#read.table('~/testUltra/abundance_table.txt')
+
+
+
+echo '['`date "+%H:%M:%S"`'] - Extracting the Single Copy Orthologs(SCO)...';
+cat ${FILENAME}/${FILENAME}.abundance_table.txt | grep -E "${MLSTSTRING2}" | awk '{ print $1 }' > ${FILENAME}/${FILENAME}.SCO.txt
+
+
+awk -v a="${FILENAME}/" -v b=".fasta" '$0=a$0b' ${FILENAME}/${FILENAME}.SCO.txt > ${FILENAME}/${FILENAME}.SCOfiles.txt
+
+mkdir ${FILENAME}'/SCO/';
+SCOPATH=${FILENAME}"/SCO/"
+
+#xargs -a ${FILENAME}/${FILENAME}.SCOfiles.txt cp -t ${SCOPATH}
+cp $(<${FILENAME}/${FILENAME}.SCOfiles.txt) ${SCOPATH}
 
 endtime=`date +%s`
 runtime=$((endtime-starttime))
 echo '['`date "+%H:%M:%S"`'] - Finished .... [total runtime:' ${runtime} 'seconds]';
 echo '===================================================';
 echo ''
+
+
 
 
 
@@ -185,8 +216,3 @@ echo ''
 #rownames(mat5)=cv$V2
 #mat5[is.na(mat5)]=0
 #heatmap.2(as.matrix((mat5)),trace='none',col=colorRampPalette(c("white", "black", "green"))(n = 299),margins=c(20,20))
-
-
-
-
-
